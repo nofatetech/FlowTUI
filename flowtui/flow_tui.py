@@ -1,44 +1,56 @@
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.widgets import (
-    Header,
-    Footer,
-    Static,
-    Label,
-    Button,
-    Tree,
-    Input,
-    ListView,
-    ListItem
-)
+from textual.containers import Horizontal, Vertical
+from textual.widgets import Header, Footer, Static, Button
 
-from widgets.panel import Panel
-from widgets.flow_list import FlowList
-from widgets.flow_structure import FlowStructure
+# -------------------------------------------------
+# Generic Panel Widget
+# -------------------------------------------------
+
+class Panel(Vertical):
+    def __init__(self, title: str, icon: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self.title = title
+        self.icon = icon
+
+    def compose(self) -> ComposeResult:
+        yield Static(f"{self.icon} {self.title}", classes="panel-title")
+        yield Vertical(classes="panel-body")
+
+# -------------------------------------------------
+# Main App
+# -------------------------------------------------
 
 class FlowTUI(App):
-    TITLE = "Flow TUI"
-    SUB_TITLE = "Resource-Centric View"
-
+    TITLE = "Flow TUI - Stable Foundation"
     CSS = """
-    Screen {
-        layout: vertical;
+    Screen { layout: vertical; }
+    Horizontal { height: 1fr; }
+
+    /* Assign widths to columns */
+    #col-1 { width: 1.5fr; }
+    #col-2 { width: 1.5fr; }
+    #col-3 { width: 2fr; }
+    #col-4 { width: 1fr; }
+
+    .panel-title { 
+        background: #1e1e1e; 
+        color: #ffffff; 
+        padding: 0 1; 
+        text-style: bold; 
     }
-    Horizontal {
-        height: 1fr;
+    .panel-body { 
+        height: 1fr; 
+        padding: 1; 
+        border: round #333333; 
     }
-    .panel-title {
-        background: #1e1e1e;
-        color: #ffffff;
-        padding: 1;
-        text-style: bold;
+    
+    /* Ensure child widgets in the body fill the space */
+    .panel-body > Static {
+        height: 100%;
     }
-    .panel-body {
-        height: 1fr;
-        padding: 1;
-        border: round #333333;
-    }
-    #utilities_panel > Vertical {
+    
+    /* Specific styling for the last column's sub-panels */
+    #col-4 > Panel {
         height: 1fr;
     }
     """
@@ -46,64 +58,26 @@ class FlowTUI(App):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
-            with Panel("Flow API", "➡️"):
-                self.flow_list = FlowList()
-                yield self.flow_list
+            with Panel("Explorer", "🌐", id="col-1") as p:
+                p.border_title = "COLUMN 1"
+                yield Static("Domain Explorer & Models Go Here")
 
-            with Panel("Flow Structure", "📁"):
-                self.flow_structure = FlowStructure()
-                yield self.flow_structure
+            with Panel("Flow Implementation", "📁", id="col-2") as p:
+                p.border_title = "COLUMN 2"
+                yield Static("Flow Details Go Here")
 
-            with Panel("Inspector", "🔍"):
-                self.inspector = VerticalScroll(
-                    Static("Select an element"), classes="panel-body"
-                )
-                yield self.inspector
+            with Panel("Inspector", "🔍", id="col-3") as p:
+                p.border_title = "COLUMN 3"
+                yield Static("Inspector Goes Here")
 
-            with Vertical(id="utilities_panel"):
-                with Panel("Services", "🔌"):
-                    yield Static("Database (PostgreSQL)\nEmail (SendGrid)\nPayments (Stripe)", classes="panel-body")
-                with Panel("Deploy", "🚀"):
-                    yield Static("Env: local\nStatus: 🟢 Running", classes="panel-body")
-                    yield Button("🚀 Deploy")
-
+            with Vertical(id="col-4"):
+                with Panel("Services", "🔌") as p:
+                    p.border_title = "COLUMN 4a"
+                    yield Static("Services Go Here")
+                with Panel("Deploy", "🚀") as p:
+                    p.border_title = "COLUMN 4b"
+                    yield Static("Deploy Controls Go Here")
         yield Footer()
-
-    async def on_list_view_selected(self, event: ListView.Selected):
-        self.flow_structure.show_flow(event.item.id)
-        await self.inspector.remove_children()
-        await self.inspector.mount(Static("Select a structural element"))
-
-
-    async def on_tree_node_selected(self, event: Tree.NodeSelected):
-        await self.inspector.remove_children()
-        node_data = event.node.data
-        if not node_data:
-            return
-
-        node_type = node_data.get("type")
-        content = node_data.get("content")
-
-        if node_type == "code":
-            await self.inspector.mount(Static(f"📄 Source for {event.node.label}"))
-            await self.inspector.mount(Static(str(content), classes="inspector-item"))
-            await self.inspector.mount(Button("✏️ Edit in Neovim"))
-        
-        elif node_type == "element":
-            await self.inspector.mount(Static(f"DOM Element: <{event.node.label}>"))
-            for key, value in content.items():
-                if key not in ["root", "children"]:
-                    await self.inspector.mount(Label(f"{key}:", classes="inspector-item"))
-                    await self.inspector.mount(Input(value=str(value)))
-
-
-# -------------------------------------------------
-# Entry Point
-# -------------------------------------------------
 
 if __name__ == "__main__":
     FlowTUI().run()
-
-# -------------------------------------------------
-# Generic Panel
-# -------------------------------------------------
