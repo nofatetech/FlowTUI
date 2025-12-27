@@ -147,9 +147,43 @@ class FlowTUI(App):
                 yield Static(inspector_content.CONTENT, classes="panel-body")
 
             with Vertical(id="col-4"):
-                with Panel("Services", "🔌") as p:
-                    p.border_title = "Services"
-                    yield Static(services_content.CONTENT, classes="panel-body")
+                with Panel("Utilities", "🛠️") as p:
+                    p.border_title = "Utilities"
+                    utilities_tree = Tree("🔧 Utilities", classes="panel-body")
+                    utilities_tree.root.expand()
+
+                    # --- Core Services ---
+                    services = utilities_tree.root.add("🚀 Core Services")
+                    db = services.add("🐘 Database")
+                    db.add("Status: [green]Connected[/]")
+                    db.add("Models: [cyan]User, Product, Invoice[/]")
+                    db.add("[bold blue]migrate()[/]")
+                    cache = services.add("⚡ Cache")
+                    cache.add("Status: [green]Connected[/]")
+                    cache.add("[bold blue]clear_all()[/]")
+
+                    # --- External Providers ---
+                    providers = utilities_tree.root.add("🔌 External Providers")
+                    email = providers.add("✉️ Email (SendGrid)")
+                    email.add("API Key: [green]Loaded[/]")
+                    email.add("📜 Contract: SendEmailSchema")
+                    email.add("[bold blue]send()[/]")
+                    payments = providers.add("💳 Payments (Stripe)")
+                    payments.add("API Key: [yellow]Test Mode[/]")
+                    payments.add("📜 Contract: ChargeSchema")
+                    payments.add("[bold blue]charge()[/]")
+                    payments.add("[bold blue]refund()[/]")
+
+                    # --- Tooling & CI/CD ---
+                    tooling = utilities_tree.root.add("⚙️ Tooling & CI/CD")
+                    tooling.add("✅ Linter: [green]Passing[/]")
+                    tooling.add("🧪 Tests: [green]128 Passing[/]")
+                    deploy = tooling.add("🚢 Deployment")
+                    deploy.add("Pipeline: [cyan]main.yml[/]")
+                    deploy.add("Last Run: [green]Success[/]")
+                    
+                    yield utilities_tree
+                    
                 with Panel("Deploy", "🚀") as p:
                     p.border_title = "Deploy"
                     yield Static(deploy_content.CONTENT, classes="panel-body")
