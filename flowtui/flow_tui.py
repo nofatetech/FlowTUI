@@ -21,7 +21,7 @@ class Panel(Vertical):
 # -------------------------------------------------
 
 class FlowTUI(App):
-    TITLE = "Flow TUI - Stable Foundation"
+    TITLE = "Flow TUI - Architectural Blueprint"
     CSS = """
     Screen { layout: vertical; }
     Horizontal { height: 1fr; }
@@ -53,30 +53,74 @@ class FlowTUI(App):
     #col-4 > Panel {
         height: 1fr;
     }
+    #col-1 > Vertical {
+        height: 1fr;
+    }
     """
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
-            with Panel("Explorer", "🌐", id="col-1") as p:
-                p.border_title = "COLUMN 1"
-                yield Static("Domain Explorer & Models Go Here")
+            with Vertical(id="col-1"):
+                with Panel("Flows", "➡️") as p:
+                    p.border_title = "Flow List"
+                    yield Static(
+                        "- Billing.Invoices /invoices\n"
+                        "- Catalog.Products /products\n"
+                        "- Catalog.Categories /categories\n"
+                        "- And More...",
+                        classes="panel-body"
+                    )
+                with Panel("Models", "📦") as p:
+                    p.border_title = "Model List"
+                    yield Static(
+                        "- User (id, name, email)\n"
+                        "- Product (id, name, price)\n"
+                        "- Invoice (id, user_id, amount)\n"
+                        "- And More...",
+                        classes="panel-body"
+                    )
 
             with Panel("Flow Implementation", "📁", id="col-2") as p:
-                p.border_title = "COLUMN 2"
-                yield Static("Flow Details Go Here")
+                p.border_title = "Flow Details"
+                yield Static(
+                    "- Controllers (index, show, create...)\n"
+                    "- Views (HTML structure)\n"
+                    "- Contracts (Input/Output schemas)\n"
+                    "- And More...",
+                    classes="panel-body"
+                )
 
             with Panel("Inspector", "🔍", id="col-3") as p:
-                p.border_title = "COLUMN 3"
-                yield Static("Inspector Goes Here")
+                p.border_title = "Inspector"
+                yield Static(
+                    "- Selected Element Properties\n"
+                    "- Bindings (flow:click, state:model)\n"
+                    "- Inline JavaScript Hooks (before-send, after-swap)\n"
+                    "- Model Schema/Definition\n"
+                    "- Code Snippets",
+                    classes="panel-body"
+                )
 
             with Vertical(id="col-4"):
                 with Panel("Services", "🔌") as p:
-                    p.border_title = "COLUMN 4a"
-                    yield Static("Services Go Here")
+                    p.border_title = "Services"
+                    yield Static(
+                        "- Database (PostgreSQL)\n"
+                        "- Email Provider (SendGrid)\n"
+                        "- Payment Gateway (Stripe)\n"
+                        "- Logging Service",
+                        classes="panel-body"
+                    )
                 with Panel("Deploy", "🚀") as p:
-                    p.border_title = "COLUMN 4b"
-                    yield Static("Deploy Controls Go Here")
+                    p.border_title = "Deploy"
+                    yield Static(
+                        "- Environment: local\n"
+                        "- Status: 🟢 Running\n"
+                        "- Version: v0.1.3\n"
+                        "- Last Deploy: 2 min ago",
+                        classes="panel-body"
+                    )
         yield Footer()
 
 if __name__ == "__main__":
