@@ -65,6 +65,37 @@ class DeployPanel(Vertical):
 # Main App
 # -------------------------------------------------
 
+from textual.widgets import Header, Footer, Static, Button, Tree, Label
+from textual.reactive import reactive
+import random
+
+# (Existing Panel and DeployPanel class definitions are assumed to be here)
+
+class ServerStatus(Vertical):
+    """A widget to display server status with ASCII graphs."""
+
+    def on_mount(self) -> None:
+        self.set_interval(0.5, self.update_graphs)
+
+    def update_graphs(self) -> None:
+        cpu_percent = random.randint(5, 95)
+        mem_percent = random.randint(10, 80)
+        self.query_one("#cpu-graph", Label).update(self.make_bar(cpu_percent))
+        self.query_one("#mem-graph", Label).update(self.make_bar(mem_percent))
+
+    def make_bar(self, percent: int) -> str:
+        bar_width = 10
+        filled_blocks = int(bar_width * percent / 100)
+        empty_blocks = bar_width - filled_blocks
+        return f"[green]{'█' * filled_blocks}[/][#333333]{'░' * empty_blocks}[/] {percent}%"
+
+    def compose(self) -> ComposeResult:
+        yield Static("🤖 CPU Usage")
+        yield Label(self.make_bar(0), id="cpu-graph")
+        yield Static("\n🧠 Memory Usage")
+        yield Label(self.make_bar(0), id="mem-graph")
+
+
 class FlowTUI(App):
     TITLE = "Flow TUI - Final Blueprint"
     CSS = """
@@ -165,6 +196,51 @@ class FlowTUI(App):
                 with Panel("Deploy", "🚀") as p:
                     yield DeployPanel(classes="panel-body")
         yield Footer()
+
+    # (Event handlers would go here)
+
+# (We need to re-add the DeployPanel definition)
+class DeployPanel(Vertical):
+    def compose(self) -> ComposeResult:
+        # This panel's content is managed via on_mount and on_button_pressed
+        yield Vertical(id="deploy-initial-view")
+        yield Vertical(id="deploy-progress-view", classes="hidden")
+
+    def on_mount(self) -> None:
+        self.initial_view = self.query_one("#deploy-initial-view")
+        self.progress_view = self.query_one("#deploy-progress-view")
+        self.populate_initial_view()
+        self.populate_progress_view()
+
+    def populate_initial_view(self) -> None:
+        history_tree = Tree("📜 Recent Deployments")
+        history_tree.root.expand()
+        history_tree.root.add("✅ [green]#a1b2c3d - 5 mins ago[/]")
+        history_tree.root.add("❌ [red]#e4f5g6h - 1 hr ago[/]")
+        
+        self.initial_view.mount(ServerStatus()) # Add graphs here
+        self.initial_view.mount(Button("🚀 Deploy to Production", variant="primary", id="deploy-button"))
+        self.initial_view.mount(history_tree)
+
+    def populate_progress_view(self) -> None:
+        self.progress_view.mount(Static("⏳ [yellow]Deployment in Progress...[/]"))
+        
+        pipeline_tree = Tree("🚀 Deploying commit #a1b2c3d...")
+        pipeline_tree.root.expand()
+        pipeline_tree.root.add("✅ [green]Linting[/]")
+        pipeline_tree.root.add("✅ [green]Building[/]")
+        pipeline_tree.root.add("⏳ [yellow]Testing (58%)[/]")
+        pipeline_tree.root.add("... [gray]Pushing to registry[/]")
+        self.progress_view.mount(pipeline_tree)
+        
+        self.progress_view.mount(Static("🪵 [bold]Logs:[/]\n> Running 128 tests..."))
+        self.progress_view.mount(Button("Abort", variant="error"))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "deploy-button":
+            self.initial_view.add_class("hidden")
+            self.progress_view.remove_class("hidden")
+            event.stop()
 
 if __name__ == "__main__":
     FlowTUI().run()
