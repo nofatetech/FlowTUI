@@ -1,0 +1,22 @@
+from textual.app import ComposeResult
+from textual.containers import Vertical
+from textual.widgets import Tree
+
+class FlowImplementationContent(Vertical):
+    def compose(self) -> ComposeResult:
+        impl_tree = Tree("📁 catalog.products")
+        impl_tree.root.expand()
+        layouts = impl_tree.root.add("🎨 Layouts")
+        layouts.add("📄 layout.html ([i]Pico.css[/])")
+        controllers = impl_tree.root.add("▶️ Controllers")
+        controllers.add("📄 index")
+        views = impl_tree.root.add("🖼️ Views")
+        index_html = views.add("📄 index.html")
+        page = index_html.add("<html>")
+        main = page.add("<main>")
+        loop = main.add("🔄 Loop: [i]for product in products[/]")
+        loop.add("↪️ Subview: [b]show.html[/]")
+        contracts = impl_tree.root.add("📜 Contracts")
+        contracts.add("📄 ProductSchema")
+        impl_tree.root.expand_all()
+        yield impl_tree
