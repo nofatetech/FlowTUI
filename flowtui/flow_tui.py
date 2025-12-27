@@ -98,15 +98,48 @@ class FlowTUI(App):
                 p.border_title = "Flow Details"
                 impl_tree = Tree("📁 catalog.products", classes="panel-body")
                 impl_tree.root.expand()
+                
                 controllers = impl_tree.root.add("▶️ Controllers")
                 controllers.add("📄 index")
                 controllers.add("📄 show")
-                controllers.add("📄 create")
+
                 views = impl_tree.root.add("🖼️ Views")
-                views.add("📄 index.html")
-                views.add("📄 show.html")
-                contracts = impl_tree.root.add("📜 Contracts")
-                contracts.add("📄 ProductSchema")
+                
+                # --- Detailed index.html ---
+                index_html = views.add("📄 index.html")
+                page = index_html.add("<html>")
+                header = page.add("<header>")
+                header.add("<h1>Welcome to our Store!</h1>")
+                nav = header.add("<nav>")
+                nav.add("<a>Home</a>")
+                nav.add("<a>Products</a>")
+                
+                main = page.add("<main>")
+                sidebar = main.add("<div.sidebar>")
+                sidebar.add("<h2>Filters</h2>")
+                
+                content = main.add("<div.content>")
+                loop = content.add("🔄 Loop: for product in products")
+                
+                # --- Reusable show.html subview ---
+                subview = loop.add("↪️ Subview: show.html")
+                card = subview.add("<div.product-card>")
+                card.add("<img> {{ product.image_url }}")
+                card.add("<h3> {{ product.name }} </h3>")
+                card.add("<p> {{ product.description }} </p>")
+                price = card.add("<p.price> {{ product.price }} </p>")
+                price.data = {"binding": "product.price"}
+                
+                button = card.add("<button> Add to Cart </button>")
+                button.data = {"flow:click": "cart.add_item(product.id)"}
+
+                admin_link = card.add("<a> Edit (Admin Only) </a>")
+                admin_link.data = {"state:show": "user.is_admin"}
+
+                footer = page.add("<footer>")
+                footer.add("<p>© 2025 Flow Inc.</p>")
+                
+                impl_tree.root.expand_all()
                 yield impl_tree
 
             with Panel("Inspector", "🔍", id="col-3") as p:
