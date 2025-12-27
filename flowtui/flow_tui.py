@@ -17,6 +17,51 @@ class Panel(Vertical):
         # Children are now yielded directly into this panel's layout
 
 # -------------------------------------------------
+# Deploy Panel Widget
+# -------------------------------------------------
+
+class DeployPanel(Vertical):
+    def compose(self) -> ComposeResult:
+        # This panel's content is managed via on_mount and on_button_pressed
+        yield Vertical(id="deploy-initial-view")
+        yield Vertical(id="deploy-progress-view", classes="hidden")
+
+    def on_mount(self) -> None:
+        self.initial_view = self.query_one("#deploy-initial-view")
+        self.progress_view = self.query_one("#deploy-progress-view")
+        self.populate_initial_view()
+        self.populate_progress_view()
+
+    def populate_initial_view(self) -> None:
+        history_tree = Tree("📜 Recent Deployments")
+        history_tree.root.expand()
+        history_tree.root.add("✅ [green]#a1b2c3d - 5 mins ago[/]")
+        history_tree.root.add("❌ [red]#e4f5g6h - 1 hr ago[/]")
+        
+        self.initial_view.mount(Button("🚀 Deploy to Production", variant="primary", id="deploy-button"))
+        self.initial_view.mount(history_tree)
+
+    def populate_progress_view(self) -> None:
+        self.progress_view.mount(Static("⏳ [yellow]Deployment in Progress...[/]"))
+        
+        pipeline_tree = Tree("🚀 Deploying commit #a1b2c3d...")
+        pipeline_tree.root.expand()
+        pipeline_tree.root.add("✅ [green]Linting[/]")
+        pipeline_tree.root.add("✅ [green]Building[/]")
+        pipeline_tree.root.add("⏳ [yellow]Testing (58%)[/]")
+        pipeline_tree.root.add("... [gray]Pushing to registry[/]")
+        self.progress_view.mount(pipeline_tree)
+        
+        self.progress_view.mount(Static("🪵 [bold]Logs:[/]\n> Running 128 tests..."))
+        self.progress_view.mount(Button("Abort", variant="error"))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "deploy-button":
+            self.initial_view.add_class("hidden")
+            self.progress_view.remove_class("hidden")
+            event.stop()
+
+# -------------------------------------------------
 # Main App
 # -------------------------------------------------
 
@@ -37,13 +82,14 @@ class FlowTUI(App):
     .panel-body > Tree { border: none; padding: 0; }
     #col-1 > Panel > .panel-body { padding: 0; }
     #col-4 > Panel > .panel-body { padding: 1; }
+    .hidden { display: none; }
     """
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
             # --- COLUMN 1: EXPLORER ---
-            with Panel("Explorer", "🌐", id="col-1") as p:
+            with Panel("Explorer", "🌐", id="col-1"):
                 with Vertical(classes="panel-body"):
                     flows_tree = Tree("📦 Domains")
                     flows_tree.root.expand()
@@ -62,7 +108,7 @@ class FlowTUI(App):
                     yield models_tree
 
             # --- COLUMN 2: FLOW IMPLEMENTATION ---
-            with Panel("Flow Implementation", "📁", id="col-2") as p:
+            with Panel("Flow Implementation", "📁", id="col-2"):
                 impl_tree = Tree("📁 catalog.products", classes="panel-body")
                 impl_tree.root.expand()
                 
@@ -90,7 +136,7 @@ class FlowTUI(App):
                 yield impl_tree
 
             # --- COLUMN 3: INSPECTOR ---
-            with Panel("Inspector", "🔍", id="col-3") as p:
+            with Panel("Inspector", "🔍", id="col-3"):
                 inspector_tree = Tree("✨ Inspector", classes="panel-body")
                 inspector_tree.root.expand()
                 identity = inspector_tree.root.add("🆔 Identity")
@@ -117,9 +163,7 @@ class FlowTUI(App):
                     yield utilities_tree
                     
                 with Panel("Deploy", "🚀") as p:
-                    with Vertical(classes="panel-body"):
-                        yield Static("- 🌍 Env: local\n- 🟢 Status: Running")
-                        yield Button("🚀 Deploy", variant="primary")
+                    yield DeployPanel(classes="panel-body")
         yield Footer()
 
 if __name__ == "__main__":
