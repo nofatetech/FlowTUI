@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow App</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- 
+      Alpine.js is used for client-side UI state management. 
+      It's perfect for things like toggling loading states or managing form inputs
+      without needing a heavy framework.
+    -->
+    <script src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+    
+    <!-- This is our custom script that handles communication with the backend Flow system -->
+    <script src="/static/flow_interceptor.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

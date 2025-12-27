@@ -1,0 +1,54 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+    <h1>Products</h1>
+    <p>A demonstration of the Flow architecture.</p>
+    
+    <!-- 
+      This is the main container for our list. 
+      The `flow:target` on the form below will point here.
+    -->
+    <div id="product-list">
+        {% for product in products %}
+            {% include "products/_item.html" %}
+        {% endfor %}
+    </div>
+
+    <hr>
+    
+    <!-- 
+      This form uses Alpine.js (`x-data`) to manage its own state.
+      - `newName`: holds the value of the text input.
+      - `loading`: is a boolean to show/hide a loading indicator.
+    -->
+    <div class="form-container" x-data="{ newName: '', loading: false }">
+        <h3>Add a New Product</h3>
+        <form 
+            @submit.prevent="
+                // When the form is submitted, set loading to true
+                loading = true; 
+                // Call our global 'flow' function, defined in flow_interceptor.js
+                // Pass the action 'products.add_item' and the current form data.
+                // After the flow completes, clear the input and reset the loading state.
+                flow('products.add_item', { name: newName }, $event.target).then(() => {
+                    newName = '';
+                    loading = false;
+                })
+            "
+            <!-- 
+              Flow Attributes: These are declarative instructions for our JS.
+              - `flow:target`: A CSS selector for where to put the HTML response.
+              - `flow:swap`:  How to insert the HTML. 'beforeend' appends it inside the target.
+            -->
+            flow:target="#product-list"
+            flow:swap="beforeend"
+        >
+            <input type="text" x-model="newName" placeholder="e.g., SSD Drive" :disabled="loading">
+            <button type="submit" :disabled="loading">
+                <!-- Alpine.js toggles the visibility of these spans based on the 'loading' state -->
+                <span x-show="!loading">Add Product</span>
+                <span x-show="loading">Adding...</span>
+            </button>
+        </form>
+    </div>
+{% endblock %}
