@@ -20,10 +20,9 @@ class Panel(Vertical):
 # Main App
 # -------------------------------------------------
 
+from textual.widgets import Header, Footer, Static, Button, Tree
+
 from tui_panels import (
-    flows_content,
-    models_content,
-    flow_implementation_content,
     inspector_content,
     services_content,
     deploy_content,
@@ -53,11 +52,11 @@ class FlowTUI(App):
         border: round #333333; 
     }
     
-    /* Ensure child widgets in the body fill the space */
-    .panel-body > Static {
-        height: 100%;
+    .panel-body > Tree {
+        border: none;
+        padding: 0;
     }
-    
+
     /* Specific styling for the last column's sub-panels */
     #col-4 > Panel {
         height: 1fr;
@@ -73,16 +72,42 @@ class FlowTUI(App):
             with Vertical(id="col-1"):
                 with Panel("Flows", "➡️") as p:
                     p.border_title = "Flow List"
-                    yield Static(flows_content.CONTENT, classes="panel-body")
+                    flows_tree = Tree("📦 Domains", classes="panel-body")
+                    flows_tree.root.expand()
+                    billing = flows_tree.root.add("💳 Billing")
+                    billing.add("🧾 Invoices (/invoices)")
+                    catalog = flows_tree.root.add("📚 Catalog")
+                    catalog.add("👕 Products (/products)")
+                    catalog.add("📂 Categories (/categories)")
+                    yield flows_tree
+
                 with Panel("Models", "📦") as p:
                     p.border_title = "Model List"
-                    yield Static(models_content.CONTENT, classes="panel-body")
+                    models_tree = Tree("📦 Domains", classes="panel-body")
+                    models_tree.root.expand()
+                    billing = models_tree.root.add("💳 Billing")
+                    billing.add("📄 Invoice")
+                    catalog = models_tree.root.add("📚 Catalog")
+                    catalog.add("📄 Product")
+                    catalog.add("📄 Category")
+                    shared = models_tree.root.add("👤 Shared")
+                    shared.add("📄 User")
+                    yield models_tree
 
             with Panel("Flow Implementation", "📁", id="col-2") as p:
                 p.border_title = "Flow Details"
-                yield Static(
-                    flow_implementation_content.CONTENT, classes="panel-body"
-                )
+                impl_tree = Tree("📁 catalog.products", classes="panel-body")
+                impl_tree.root.expand()
+                controllers = impl_tree.root.add("▶️ Controllers")
+                controllers.add("📄 index")
+                controllers.add("📄 show")
+                controllers.add("📄 create")
+                views = impl_tree.root.add("🖼️ Views")
+                views.add("📄 index.html")
+                views.add("📄 show.html")
+                contracts = impl_tree.root.add("📜 Contracts")
+                contracts.add("📄 ProductSchema")
+                yield impl_tree
 
             with Panel("Inspector", "🔍", id="col-3") as p:
                 p.border_title = "Inspector"
