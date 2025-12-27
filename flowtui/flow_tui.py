@@ -46,6 +46,7 @@ class DeployInfo(Static):
 
         yield Static("\n🕹️ [bold cyan]DEPLOYMENT CONTROL[/]")
         yield Button("🚀 DEPLOY TO PRODUCTION", variant="primary", id="deploy-button")
+        
         history_tree = Tree("📜 Recent Deployments")
         history_tree.root.expand()
         history_tree.root.add("✅ [green]#a1b2c3d - 5 mins ago[/]")
@@ -83,17 +84,67 @@ class FlowTUI(App):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
+            # --- COLUMN 1: EXPLORER ---
             with Panel("Explorer", "🌐", id="col-1"):
                 with Vertical(classes="panel-body"):
-                    yield Tree("📦 Domains")
-                    yield Tree("📦 Models")
+                    flows_tree = Tree("📦 Domains")
+                    flows_tree.root.expand()
+                    billing = flows_tree.root.add("💳 Billing")
+                    billing.add("🧾 Invoices (/invoices)")
+                    catalog = flows_tree.root.add("📚 Catalog")
+                    catalog.add("👕 Products (/products)")
+                    yield flows_tree
+                    
+                    models_tree = Tree("📦 Models")
+                    models_tree.root.expand()
+                    billing_m = models_tree.root.add("💳 Billing")
+                    billing_m.add("📄 Invoice")
+                    shared = models_tree.root.add("👤 Shared")
+                    shared.add("📄 User")
+                    yield models_tree
+
+            # --- COLUMN 2: FLOW IMPLEMENTATION ---
             with Panel("Flow Implementation", "📁", id="col-2"):
-                yield Tree("📁 catalog.products", classes="panel-body")
+                impl_tree = Tree("📁 catalog.products", classes="panel-body")
+                impl_tree.root.expand()
+                layouts = impl_tree.root.add("🎨 Layouts")
+                layouts.add("📄 layout.html ([i]Pico.css[/])")
+                controllers = impl_tree.root.add("▶️ Controllers")
+                controllers.add("📄 index")
+                views = impl_tree.root.add("🖼️ Views")
+                index_html = views.add("📄 index.html")
+                page = index_html.add("<html>")
+                main = page.add("<main>")
+                loop = main.add("🔄 Loop: [i]for product in products[/]")
+                loop.add("↪️ Subview: [b]show.html[/]")
+                contracts = impl_tree.root.add("📜 Contracts")
+                contracts.add("📄 ProductSchema")
+                impl_tree.root.expand_all()
+                yield impl_tree
+
+            # --- COLUMN 3: INSPECTOR ---
             with Panel("Inspector", "🔍", id="col-3"):
-                yield Tree("✨ Inspector", classes="panel-body")
+                inspector_tree = Tree("✨ Inspector", classes="panel-body")
+                inspector_tree.root.expand()
+                identity = inspector_tree.root.add("🆔 Identity")
+                identity.add("Tag: [cyan]button[/]")
+                styling = inspector_tree.root.add("🎨 Styling")
+                styling.add("CSS Classes: [yellow]btn primary[/]")
+                events = inspector_tree.root.add("⚡️ Events (Signals)")
+                events.add("flow:click: [blue]cart.add_item[/]")
+                yield inspector_tree
+
+            # --- COLUMN 4: UTILITIES & DEPLOY ---
             with Vertical(id="col-4"):
                 with Panel("Utilities", "🛠️") as p:
-                    yield Tree("🔧 Utilities", classes="panel-body")
+                    utilities_tree = Tree("🔧 Utilities", classes="panel-body")
+                    utilities_tree.root.expand()
+                    services = utilities_tree.root.add("🚀 Core Services")
+                    services.add("🐘 Database: [green]Connected[/]")
+                    providers = utilities_tree.root.add("🔌 External Providers")
+                    providers.add("✉️ Email: [green]API Key Loaded[/]")
+                    yield utilities_tree
+                    
                 with Panel("Deploy", "🚀") as p:
                     yield DeployInfo(classes="panel-body")
         yield Footer()
