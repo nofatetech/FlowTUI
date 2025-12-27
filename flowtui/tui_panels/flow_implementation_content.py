@@ -16,6 +16,14 @@ class FlowImplementationContent(Vertical):
         main = page.add("<main>")
         loop = main.add("🔄 Loop: [i]for product in products[/]")
         loop.add("↪️ Subview: [b]show.html[/]")
+
+        # --- BLENDER SCENE VIEW (Concept) ---
+        blender_scene = views.add("🧊 [b]Blender Scene[/] (main.py)")
+        scene_root = blender_scene.add("📂 Collections")
+        scene_root.add("🖼️ UI Elements (Objects)")
+        scene_root.add("💡 Lights & 🎥 Cameras")
+        scene_root.add("⚡️ Bindings (scene.add_item)")
+
         contracts = impl_tree.root.add("📜 Contracts")
         contracts.add("📄 ProductSchema")
         impl_tree.root.expand_all()
