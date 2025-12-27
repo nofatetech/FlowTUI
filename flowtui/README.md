@@ -134,3 +134,9 @@ This is not just a tool.
 It’s a **way of thinking about systems**.
 
 Build things that explain themselves.
+
+---
+
+## Detailed Architecture
+
+For a deep dive into the technical implementation, including backend framework choices, Flow definition, and frontend interactivity (`flow.js`), please refer to [`ARCHITECTURE.md`](./ARCHITECTURE.md).

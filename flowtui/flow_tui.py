@@ -1,5 +1,5 @@
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import (
     Header,
     Footer,
@@ -9,6 +9,7 @@ from textual.widgets import (
     Label,
     Button,
     Tree,
+    Input,
 )
 from textual.events import Click
 
@@ -54,28 +55,22 @@ def build_flow_tree():
 # Inspector Data (mocked by node label)
 # -------------------------------------------------
 
-def inspect_node(label: str) -> str:
-    return "\n".join(
-        [
-            f"🔍 Inspector",
-            "",
-            f"Node: {label}",
-            "",
-            "Type:",
-            "  UI Element",
-            "",
-            "Properties:",
-            "  id: auto",
-            "  visible: true",
-            "  class: default",
-            "",
-            "Behaviours:",
-            "  • bound_flow: core.auth.login",
-            "  • model: User",
-            "",
-            "🚧 (editing coming later)",
-        ]
-    )
+def inspect_node(label: str) -> dict:
+    return {
+        "Info": {
+            "Node": label,
+            "Type": "UI Element",
+        },
+        "Properties": {
+            "id": "auto",
+            "visible": "true",
+            "class": "default",
+        },
+        "Behaviours": {
+            "bound_flow": "core.auth.login",
+            "model": "User",
+        },
+    }
 
 
 # -------------------------------------------------
@@ -90,7 +85,6 @@ class Panel(Vertical):
 
     def compose(self) -> ComposeResult:
         yield Static(f"{self.icon} {self.title}", classes="panel-title")
-        yield Vertical(classes="panel-body")
 
 
 # -------------------------------------------------
@@ -149,6 +143,19 @@ class FlowTUI(App):
         padding: 1;
     }
 
+    .inspector-category {
+        margin-top: 1;
+        text-style: bold;
+    }
+
+    .inspector-item {
+        margin: 1 0 0 2;
+    }
+
+    Input {
+        margin: 0 0 0 2;
+    }
+
     Button {
         margin-top: 1;
     }
@@ -159,29 +166,31 @@ class FlowTUI(App):
 
         with Horizontal():
             with Panel("Flows", "📦"):
-                yield FlowList()
+                yield FlowList(classes="panel-body")
 
             with Panel("Flow View", "🌳"):
                 self.flow_tree = build_flow_tree()
+                self.flow_tree.add_class("panel-body")
                 yield self.flow_tree
 
             with Panel("Inspector", "🔍"):
-                self.inspector = Static(
-                    "Select an element\nfrom the Flow View",
-                    classes="inspector",
+                self.inspector = VerticalScroll(
+                    Static("Select an element\nfrom the Flow View"),
+                    classes="inspector panel-body",
                 )
                 yield self.inspector
 
             with Panel("Deploy", "🚀"):
-                yield Static(
-                    "Environment: local\n"
-                    "Status: 🟢 Running\n"
-                    "Version: v0.1.3\n"
-                    "Last Deploy: 2 min ago",
-                    classes="inspector",
-                )
-                yield Button("🚀 Deploy")
-                yield Button("🔄 Restart", variant="warning")
+                with Vertical(classes="panel-body"):
+                    yield Static(
+                        "Environment: local\n"
+                        "Status: 🟢 Running\n"
+                        "Version: v0.1.3\n"
+                        "Last Deploy: 2 min ago",
+                        classes="inspector",
+                    )
+                    yield Button("🚀 Deploy")
+                    yield Button("🔄 Restart", variant="warning")
 
         yield Footer()
 
@@ -189,9 +198,19 @@ class FlowTUI(App):
     # Interaction: click tree node → inspector
     # -------------------------------------------------
 
-    def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+    async def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         label = event.node.label
-        self.inspector.update(inspect_node(str(label)))
+        data = inspect_node(str(label))
+
+        await self.inspector.remove_children()
+
+        for category, items in data.items():
+            await self.inspector.mount(
+                Static(category, classes="inspector-category")
+            )
+            for key, value in items.items():
+                await self.inspector.mount(Label(f"{key}:", classes="inspector-item"))
+                await self.inspector.mount(Input(value=str(value)))
 
 
 # -------------------------------------------------
