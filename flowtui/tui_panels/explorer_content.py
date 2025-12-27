@@ -76,7 +76,7 @@ class ExplorerContent(Vertical):
         """Render the explorer by scanning the project directory."""
         
         # Convention: The TUI is opinionated and knows the project structure.
-        PROJECT_PATH = "web_app_template" # Hardcoded for now
+        PROJECT_PATH = "app_templates/web_app_template" # Hardcoded for now
         
         flows_path = os.path.join(PROJECT_PATH, "flows")
         models_path = os.path.join(PROJECT_PATH, "models")
