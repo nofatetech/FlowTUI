@@ -27,6 +27,40 @@ class FlowTUI(App):
     .panel-body { height: 1fr; padding: 1; border: round #333333; }
     .panel-body > Tree { border: none; padding: 0; }
     #col-1 > Panel > .panel-body { padding: 0; }
+
+    /* --- Inspector Panel Styling --- */
+    #col-3 .prop-row {
+        height: auto;
+        align: left middle;
+        margin: 0 1;
+    }
+    #col-3 .label {
+        width: 25%;
+        color: gray;
+        text-align: right;
+        margin-right: 2;
+    }
+    #col-3 .prop-input {
+        width: 75%;
+        border: none;
+        background: #2a2a2a;
+    }
+    #col-3 .code-preview {
+        width: 60%;
+        height: 1;
+        content-align: left middle;
+        background: #2a2a2a;
+        padding: 0 1;
+        border: none;
+    }
+    #col-3 .edit-btn {
+        width: auto;
+        height: 1;
+        min-width: 0;
+        margin-left: 1;
+        border: none;
+        background: #3a3a3a;
+    }
     """
 
     def compose(self) -> ComposeResult:
