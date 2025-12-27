@@ -20,6 +20,15 @@ class Panel(Vertical):
 # Main App
 # -------------------------------------------------
 
+from tui_panels import (
+    flows_content,
+    models_content,
+    flow_implementation_content,
+    inspector_content,
+    services_content,
+    deploy_content,
+)
+
 class FlowTUI(App):
     TITLE = "Flow TUI - Architectural Blueprint"
     CSS = """
@@ -64,63 +73,28 @@ class FlowTUI(App):
             with Vertical(id="col-1"):
                 with Panel("Flows", "➡️") as p:
                     p.border_title = "Flow List"
-                    yield Static(
-                        "- Billing.Invoices /invoices\n"
-                        "- Catalog.Products /products\n"
-                        "- Catalog.Categories /categories\n"
-                        "- And More...",
-                        classes="panel-body"
-                    )
+                    yield Static(flows_content.CONTENT, classes="panel-body")
                 with Panel("Models", "📦") as p:
                     p.border_title = "Model List"
-                    yield Static(
-                        "- User (id, name, email)\n"
-                        "- Product (id, name, price)\n"
-                        "- Invoice (id, user_id, amount)\n"
-                        "- And More...",
-                        classes="panel-body"
-                    )
+                    yield Static(models_content.CONTENT, classes="panel-body")
 
             with Panel("Flow Implementation", "📁", id="col-2") as p:
                 p.border_title = "Flow Details"
                 yield Static(
-                    "- Controllers (index, show, create...)\n"
-                    "- Views (HTML structure)\n"
-                    "- Contracts (Input/Output schemas)\n"
-                    "- And More...",
-                    classes="panel-body"
+                    flow_implementation_content.CONTENT, classes="panel-body"
                 )
 
             with Panel("Inspector", "🔍", id="col-3") as p:
                 p.border_title = "Inspector"
-                yield Static(
-                    "- Selected Element Properties\n"
-                    "- Bindings (flow:click, state:model)\n"
-                    "- Inline JavaScript Hooks (before-send, after-swap)\n"
-                    "- Model Schema/Definition\n"
-                    "- Code Snippets",
-                    classes="panel-body"
-                )
+                yield Static(inspector_content.CONTENT, classes="panel-body")
 
             with Vertical(id="col-4"):
                 with Panel("Services", "🔌") as p:
                     p.border_title = "Services"
-                    yield Static(
-                        "- Database (PostgreSQL)\n"
-                        "- Email Provider (SendGrid)\n"
-                        "- Payment Gateway (Stripe)\n"
-                        "- Logging Service",
-                        classes="panel-body"
-                    )
+                    yield Static(services_content.CONTENT, classes="panel-body")
                 with Panel("Deploy", "🚀") as p:
                     p.border_title = "Deploy"
-                    yield Static(
-                        "- Environment: local\n"
-                        "- Status: 🟢 Running\n"
-                        "- Version: v0.1.3\n"
-                        "- Last Deploy: 2 min ago",
-                        classes="panel-body"
-                    )
+                    yield Static(deploy_content.CONTENT, classes="panel-body")
         yield Footer()
 
 if __name__ == "__main__":
