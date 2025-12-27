@@ -4,213 +4,97 @@ from textual.widgets import (
     Header,
     Footer,
     Static,
-    ListView,
-    ListItem,
     Label,
     Button,
     Tree,
     Input,
+    ListView,
+    ListItem
 )
-from textual.events import Click
 
-# -------------------------------------------------
-# Mock Data
-# -------------------------------------------------
-
-MOCK_FLOWS = [
-    "core.auth.login",
-    "core.auth.logout",
-    "core.incident.create",
-]
-
-# -------------------------------------------------
-# Flow View Tree (contracts + views)
-# -------------------------------------------------
-
-def build_flow_tree():
-    tree = Tree("🌊 flow.core.auth.login")
-
-    # Contracts
-    contracts = tree.root.add("📜 contracts")
-    contracts.add("📥 input.credentials")
-    contracts.add("📤 output.session")
-
-    # Main View
-    view = tree.root.add("🧩 view.auth.login")
-    layout = view.add("📐 layout.base")
-    slot = layout.add("🔳 slot.content")
-
-    form = slot.add("📝 component.form.login")
-    form.add("🔤 input.email")
-    form.add("🔒 input.password")
-    form.add("➡️ button.submit")
-
-    # Subview
-    tree.root.add("🧩 subview.auth.footer")
-
-    return tree
-
-
-# -------------------------------------------------
-# Inspector Data (mocked by node label)
-# -------------------------------------------------
-
-def inspect_node(label: str) -> dict:
-    return {
-        "Info": {
-            "Node": label,
-            "Type": "UI Element",
-        },
-        "Properties": {
-            "id": "auto",
-            "visible": "true",
-            "class": "default",
-        },
-        "Behaviours": {
-            "bound_flow": "core.auth.login",
-            "model": "User",
-        },
-    }
-
-
-# -------------------------------------------------
-# Generic Panel
-# -------------------------------------------------
-
-class Panel(Vertical):
-    def __init__(self, title: str, icon: str = "", *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.title = title
-        self.icon = icon
-
-    def compose(self) -> ComposeResult:
-        yield Static(f"{self.icon} {self.title}", classes="panel-title")
-
-
-# -------------------------------------------------
-# Left Panel: Flows
-# -------------------------------------------------
-
-class FlowList(Vertical):
-    def compose(self) -> ComposeResult:
-        yield ListView(
-            *[ListItem(Label(flow)) for flow in MOCK_FLOWS],
-        )
-        yield Button("➕ Create Flow", variant="primary")
-
-
-# -------------------------------------------------
-# App
-# -------------------------------------------------
+from widgets.panel import Panel
+from widgets.flow_list import FlowList
+from widgets.flow_structure import FlowStructure
 
 class FlowTUI(App):
     TITLE = "Flow TUI"
-    SUB_TITLE = "Flows • Contracts • Views • Inspector"
+    SUB_TITLE = "Resource-Centric View"
 
     CSS = """
     Screen {
         layout: vertical;
     }
-
     Horizontal {
         height: 1fr;
     }
-
     .panel-title {
         background: #1e1e1e;
         color: #ffffff;
         padding: 1;
         text-style: bold;
     }
-
     .panel-body {
         height: 1fr;
         padding: 1;
+        border: round #333333;
     }
-
-    ListView {
+    #utilities_panel > Vertical {
         height: 1fr;
-        border: round #333333;
-    }
-
-    Tree {
-        height: 1fr;
-        border: round #333333;
-    }
-
-    .inspector {
-        border: round #333333;
-        padding: 1;
-    }
-
-    .inspector-category {
-        margin-top: 1;
-        text-style: bold;
-    }
-
-    .inspector-item {
-        margin: 1 0 0 2;
-    }
-
-    Input {
-        margin: 0 0 0 2;
-    }
-
-    Button {
-        margin-top: 1;
     }
     """
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-
         with Horizontal():
-            with Panel("Flows", "📦"):
-                yield FlowList(classes="panel-body")
+            with Panel("Flow API", "➡️"):
+                self.flow_list = FlowList()
+                yield self.flow_list
 
-            with Panel("Flow View", "🌳"):
-                self.flow_tree = build_flow_tree()
-                self.flow_tree.add_class("panel-body")
-                yield self.flow_tree
+            with Panel("Flow Structure", "📁"):
+                self.flow_structure = FlowStructure()
+                yield self.flow_structure
 
             with Panel("Inspector", "🔍"):
                 self.inspector = VerticalScroll(
-                    Static("Select an element\nfrom the Flow View"),
-                    classes="inspector panel-body",
+                    Static("Select an element"), classes="panel-body"
                 )
                 yield self.inspector
 
-            with Panel("Deploy", "🚀"):
-                with Vertical(classes="panel-body"):
-                    yield Static(
-                        "Environment: local\n"
-                        "Status: 🟢 Running\n"
-                        "Version: v0.1.3\n"
-                        "Last Deploy: 2 min ago",
-                        classes="inspector",
-                    )
+            with Vertical(id="utilities_panel"):
+                with Panel("Services", "🔌"):
+                    yield Static("Database (PostgreSQL)\nEmail (SendGrid)\nPayments (Stripe)", classes="panel-body")
+                with Panel("Deploy", "🚀"):
+                    yield Static("Env: local\nStatus: 🟢 Running", classes="panel-body")
                     yield Button("🚀 Deploy")
-                    yield Button("🔄 Restart", variant="warning")
 
         yield Footer()
 
-    # -------------------------------------------------
-    # Interaction: click tree node → inspector
-    # -------------------------------------------------
-
-    async def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        label = event.node.label
-        data = inspect_node(str(label))
-
+    async def on_list_view_selected(self, event: ListView.Selected):
+        self.flow_structure.show_flow(event.item.id)
         await self.inspector.remove_children()
+        await self.inspector.mount(Static("Select a structural element"))
 
-        for category, items in data.items():
-            await self.inspector.mount(
-                Static(category, classes="inspector-category")
-            )
-            for key, value in items.items():
-                await self.inspector.mount(Label(f"{key}:", classes="inspector-item"))
-                await self.inspector.mount(Input(value=str(value)))
+
+    async def on_tree_node_selected(self, event: Tree.NodeSelected):
+        await self.inspector.remove_children()
+        node_data = event.node.data
+        if not node_data:
+            return
+
+        node_type = node_data.get("type")
+        content = node_data.get("content")
+
+        if node_type == "code":
+            await self.inspector.mount(Static(f"📄 Source for {event.node.label}"))
+            await self.inspector.mount(Static(str(content), classes="inspector-item"))
+            await self.inspector.mount(Button("✏️ Edit in Neovim"))
+        
+        elif node_type == "element":
+            await self.inspector.mount(Static(f"DOM Element: <{event.node.label}>"))
+            for key, value in content.items():
+                if key not in ["root", "children"]:
+                    await self.inspector.mount(Label(f"{key}:", classes="inspector-item"))
+                    await self.inspector.mount(Input(value=str(value)))
 
 
 # -------------------------------------------------
@@ -219,3 +103,7 @@ class FlowTUI(App):
 
 if __name__ == "__main__":
     FlowTUI().run()
+
+# -------------------------------------------------
+# Generic Panel
+# -------------------------------------------------
