@@ -97,7 +97,7 @@ class ExplorerContent(Vertical):
     def _populate_tree(self, tree_node, data: dict, icon: str, name_style: str):
         """Helper function to recursively populate a Tree widget from nested data."""
         for name, content in data.items():
-            sub_node = tree_node.add(f"{icon} [b {name_style}]{name}[/]")
+            sub_node = tree_node.add(f"{icon} [{name_style}][b]{name}[/b][/{name_style}]")
             
             # Attach the file path to the node's data if it exists
             if "_file_path" in content:

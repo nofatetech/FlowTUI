@@ -85,18 +85,34 @@ class FlowImplementationContent(Vertical):
     
     # --- New Dynamic Tree Logic ---
 
-    def _parse_flow_for_methods(self, file_path: str) -> list[str]:
-        """Scans a Python file and returns a list of its public method names."""
-        methods = []
+    def _get_flow_structure(self, file_path: str) -> tuple[list[str], set[str]]:
+        """
+        Parses a flow file to get a list of routes from the docstring and a
+        set of all public method names.
+        """
+        routes: list[str] = []
+        methods: set[str] = set()
         try:
             with open(file_path, 'r') as f:
                 content = f.read()
-            # A simple regex to find public methods
-            found = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content, re.MULTILINE)
-            methods = [m for m in found if not m.startswith('_')]
+
+            # 1. Get all public method names using regex
+            found_methods = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content, re.MULTILINE)
+            methods = {m.lower() for m in found_methods if not m.startswith('_')}
+
+            # 2. Get routes from the class docstring
+            class_match = re.search(r'class \w+:\s*"""(.*?)"""', content, re.DOTALL)
+            if class_match:
+                docstring = class_match.group(1)
+                routes_match = re.search(r'Routes:\s*([A-Z0-9_, ]+)', docstring, re.IGNORECASE)
+                if routes_match:
+                    routes_str = routes_match.group(1)
+                    routes = [route.strip() for route in routes_str.split(',')]
+        
         except Exception:
-            pass # Errors will be handled by the caller
-        return methods
+            # Errors will be handled by the caller
+            pass
+        return routes, methods
 
     def update_tree(self, flow_name: str, flow_file_path: str) -> None:
         """Clear and rebuild the tree based on the selected flow."""
@@ -107,32 +123,35 @@ class FlowImplementationContent(Vertical):
         # --- Controllers ---
         controllers_root = tree.root.add("▶️ Controllers")
         
-        # Our opinionated, always-visible standard methods
-        standard_methods = {"get", "post", "put", "delete"}
+        routes, actual_methods = self._get_flow_structure(flow_file_path)
+        standard_verbs = ["get", "post", "put", "delete"]
+
+        if not routes:
+            controllers_root.add("⚠️ [gray]No routes defined in docstring.[/]")
         
-        # Actual methods found in the file
-        actual_methods = self._parse_flow_for_methods(flow_file_path)
-        
-        for method in sorted(standard_methods):
-            label = f"📄 [b green]{method}[/]" if method in actual_methods else f"📄 [gray]{method}[/]"
-            controllers_root.add(label)
-        
-        custom_methods = [m for m in actual_methods if m not in standard_methods]
-        if custom_methods:
-            custom_root = controllers_root.add("▶️ Custom")
-            for method in sorted(custom_methods):
-                custom_root.add(f"📄 [b cyan]{method}[/]")
+        for route in routes:
+            route_node = controllers_root.add(f"▶️ [green]{route}[/green]")
+            for verb in standard_verbs:
+                # Opinionated naming convention: routeName_httpVerb
+                expected_method = f"{route.lower()}_{verb}"
+                
+                # Special case: a method name matching the route name is the GET
+                is_present = expected_method in actual_methods
+                if not is_present and verb == "get" and route.lower() in actual_methods:
+                    is_present = True
+
+                label = f"↳ [cyan]{verb.upper()}[/]" if is_present else f"↳ [gray]{verb.upper()}[/]"
+                route_node.add(label)
 
         # --- Views ---
         views_root = tree.root.add("🖼️ Views")
         PROJECT_PATH = "app_templates/web_app_template" # This could be dynamic later
         views_dir = os.path.join(PROJECT_PATH, "views")
         
-        # This part remains the same, finding and parsing HTML files
         if os.path.isdir(views_dir):
             for file in sorted(os.listdir(views_dir)):
                 if file.endswith(".html") and not file.startswith("_"):
-                    view_node = views_root.add(f"📄 [b blue]{file}[/]")
+                    view_node = views_root.add(f"📄 [blue]{file}[/blue]")
                     self._populate_html_tree(view_node, os.path.join(views_dir, file))
         
         tree.root.expand_all()

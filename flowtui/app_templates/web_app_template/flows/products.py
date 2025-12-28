@@ -11,33 +11,12 @@ db_products = {
 class Products:
     """
     Manages the product catalog.
-    Routes: LIST, CREATE, HTMX_SNIPPET_PRODUCT_LIST
+    Routes: INDEX, HTMX_SNIPPET_PRODUCT_LIST
     """
-    def get_all(self) -> dict:
-        """Returns the state for the initial page load."""
-        print("Flow 'products.get_all' executed.")
-        return {"products": list(db_products.values())}
-
-    def add_item(self, params: dict) -> dict:
-        """
-        Handles adding a new item. 
-        Returns ONLY the new item's data for partial rendering.
-        """
-        print(f"Flow 'products.add_item' executed with params: {params}")
-        new_id = max(db_products.keys()) + 1 if db_products else 1
-        
-        # Basic validation
-        item_name = params.get("name")
-        if not item_name or len(item_name) < 2:
-            # In a real app, you'd return a proper error response
-            raise ValueError("Product name must be at least 2 characters.")
-
-        new_product = Product(id=new_id, name=item_name)
-        db_products[new_id] = new_product
-        
-        # Convention: The key in the returned dict ("product") should match
-        # the variable name used in the partial template (_item.html).
-        return {"product": new_product}
+    def index_get(self) -> dict:
+        """index get."""
+        print("index get")
+        return {} # ??
 
     def HTMX_SNIPPET_PRODUCT_LIST(self) -> dict:
         """
