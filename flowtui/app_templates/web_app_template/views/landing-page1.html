@@ -1,26 +1,68 @@
 {% extends "layouts/base.html" %}
 
 {% block content %}
-    <header>
-        <h1>Welcome to Flow</h1>
-        <p>Your journey starts here.</p>
+    <header class="main-header">
+        <nav>
+            <a href="/" class="logo">Flow.TUI</a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#products">Products</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
     </header>
-    
-    <section id="featured-products">
-        <h2>Featured Products</h2>
-        <div class="product-grid">
-            <!-- 🔄 Loop: for product in featured_products -->
-            <div class="product-card">
-                <h3>Product Name</h3>
-                <p>Description...</p>
-                <span>Price: $X.XX</span>
-                <button>View Details</button>
-            </div>
-            <!-- End Loop -->
-        </div>
-    </section>
 
-    <footer>
-        <p>&copy; 2025 Flow App</p>
+    <main>
+        <section id="hero" class="hero-section">
+            <h1>Build Your Ideas, Faster.</h1>
+            <p class="subtitle">Flow.TUI streamlines full-stack development with visual tools and declarative components.</p>
+            <button class="btn primary">Get Started Now</button>
+        </section>
+
+        <section id="features" class="features-section">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Visual Explorer</h3>
+                    <p>Navigate your application's architecture with ease.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Live Inspector</h3>
+                    <p>Edit components, bindings, and code in real-time.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Multi-Platform Views</h3>
+                    <p>Manage web and 3D application structures from one place.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="products-section">
+            <h2>Explore Our Mock Products</h2>
+            <div class="product-grid">
+                <!-- 🔄 Loop: for product in featured_products -->
+                <div class="product-card">
+                    <h3>Flow Board</h3>
+                    <p>A smart board for your daily tasks.</p>
+                    <span>Price: $49.99</span>
+                    <a href="#" class="btn">Learn More</a>
+                </div>
+                <div class="product-card">
+                    <h3>Flow Monitor</h3>
+                    <p>Keep track of your app's health.</p>
+                    <span>Price: $129.00</span>
+                    <a href="#" class="btn">Learn More</a>
+                </div>
+                <!-- End Loop -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Flow.TUI. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+        </div>
     </footer>
 {% endblock %}
