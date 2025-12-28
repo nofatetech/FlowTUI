@@ -111,6 +111,37 @@ class InspectorContent(VerticalScroll):
             classes="prop-row"
         )
     
+    BINDINGS = [
+        Binding("ctrl+s", "suspend_process", "Suspend/Resume", show=False),
+    ]
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.app.bell()
-        self.app.log(f"Editing for code blocks is not yet implemented for saving.")
+        if not self.file_path or not self.original_line:
+            self.app.bell()
+            return
+
+        try:
+            with open(self.file_path, "r") as f:
+                lines = f.readlines()
+            
+            # Find the 1-based line number for the editor
+            line_number = -1
+            for i, line in enumerate(lines):
+                if line.strip() == self.original_line.strip():
+                    line_number = i + 1
+                    break
+            
+            if line_number == -1:
+                self.app.log(f"Could not find line in file: {self.original_line}")
+                return
+
+            # This is the Textual action that suspends the app
+            self.app.action_suspend_process()
+
+            # Launch Neovim at the correct file and line
+            subprocess.run(["nvim", f"+{line_number}", self.file_path])
+            
+            self.app.log("Resumed TUI. Note: Manual refresh might be needed to see changes.")
+
+        except Exception as e:
+            self.app.log(f"Error opening editor: {e}")

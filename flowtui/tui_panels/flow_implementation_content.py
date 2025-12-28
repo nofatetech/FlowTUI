@@ -20,6 +20,25 @@ class FlowImplementationContent(Vertical):
             self.file_path = file_path
             self.original_line = original_line
 
+    
+    HTML_TAG_EMOJIS = {
+        "div": "📦", "p": "¶", "span": "📄", "a": "🔗", "img": "🖼️",
+        "h1": "👑", "h2": "<h2>", "h3": "<h3>", "h4": "<h4>", "h5": "<h5>", "h6": "<h6>",
+        "ul": "📜", "ol": "🔢", "li": "-",
+        "table": "📅", "tr": "➡️", "td": "<td>", "th": "<th>",
+        "form": "📝", "input": "💬", "button": "🔘", "textarea": "📋",
+        "select": "🔽", "option": "🔹",
+        "header": "🔼", "footer": "🔽", "nav": "🧭", "main": "📘", "section": "📐", "article": "📰",
+        "aside": "📑", "figure": "🎨", "figcaption": "✏️",
+        "video": "🎬", "audio": "🎵", "source": "📀",
+        "canvas": "🖌️", "svg": "📈",
+        "details": "🔍", "summary": "📝",
+        "dialog": "💬", "menu": "📋",
+        "script": "📜", "style": "🎨", "link": "🔗", "meta": "⚙️",
+        "body": "🧍", "html": "🌐", "head": "🧠",
+        "default": "📄"
+    }
+    
     def _parse_html_line(self, line: str) -> tuple[int, dict]:
         """Parses a single line of HTML, also storing the original line."""
         indent = len(line) - len(line.lstrip(' '))
@@ -38,7 +57,8 @@ class FlowImplementationContent(Vertical):
 
         cls = data.get('class', '')
         id = data.get('id', '')
-        data["display"] = f"<{tag}{'#' + id if id else ''}{'.' + cls if cls else ''}>"
+        emoji = self.HTML_TAG_EMOJIS.get(tag, self.HTML_TAG_EMOJIS["default"])
+        data["display"] = f"{emoji} <{tag}{'#' + id if id else ''}{'.' + cls if cls else ''}>"
         return indent, data
 
     def _populate_html_tree(self, parent_node: TreeNode, file_path: str):
