@@ -23,6 +23,16 @@ class FlowImplementationContent(Vertical):
             self.element_data = element_data
             self.file_path = file_path
             self.original_line = original_line
+            
+    class MethodSelected(Message):
+        """Posted when a controller method/verb is selected in the tree."""
+        def __init__(self, flow_name: str, route_name: str, verb: str, is_implemented: bool, file_path: str) -> None:
+            super().__init__()
+            self.flow_name = flow_name
+            self.route_name = route_name
+            self.verb = verb
+            self.is_implemented = is_implemented
+            self.file_path = file_path
     
     HTML_TAG_EMOJIS = {
         "div": "📦", "p": "¶", "span": "📄", "a": "🔗", "img": "🖼️",
@@ -121,7 +131,7 @@ class FlowImplementationContent(Vertical):
         tree.root.label = f"📁 {flow_name}"
 
         # --- Controllers ---
-        controllers_root = tree.root.add("▶️ Controllers")
+        controllers_root = tree.root.add("▶️ [b]Controllers[/b]")
         
         routes, actual_methods = self._get_flow_structure(flow_file_path)
         standard_verbs = ["get", "post", "put", "delete"]
@@ -136,16 +146,23 @@ class FlowImplementationContent(Vertical):
                 expected_method = f"{route.lower()}_{verb}"
                 
                 # Special case: a method name matching the route name is the GET
-                is_present = expected_method in actual_methods
-                if not is_present and verb == "get" and route.lower() in actual_methods:
-                    is_present = True
+                is_implemented = expected_method in actual_methods
+                if not is_implemented and verb == "get" and route.lower() in actual_methods:
+                    is_implemented = True
 
-                label = f"↳ [cyan]{verb.upper()}[/]" if is_present else f"↳ [gray]{verb.upper()}[/]"
-                route_node.add(label)
+                label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
+                verb_node = route_node.add(label)
+                verb_node.data = {
+                    "flow_name": flow_name,
+                    "route_name": route,
+                    "verb": verb,
+                    "is_implemented": is_implemented,
+                    "file_path": flow_file_path
+                }
 
         # --- Views ---
-        views_root = tree.root.add("🖼️ Views")
-        PROJECT_PATH = "app_templates/web_app_template" # This could be dynamic later
+        views_root = tree.root.add("🖼️ [b]Views[/b]")
+        PROJECT_PATH = "app_templates/web_app_template"
         views_dir = os.path.join(PROJECT_PATH, "views")
         
         if os.path.isdir(views_dir):
@@ -155,6 +172,16 @@ class FlowImplementationContent(Vertical):
                     self._populate_html_tree(view_node, os.path.join(views_dir, file))
         
         tree.root.expand_all()
+
+        # --- Contracts ---
+        contracts_root = tree.root.add("📜 [b]Contracts[/b]")
+        contracts_dir = os.path.join(PROJECT_PATH, "contracts")
+        if os.path.isdir(contracts_dir):
+            for file in sorted(os.listdir(contracts_dir)):
+                if file.endswith(".py") and not file.startswith("__"):
+                    contracts_root.add(f"📄 [yellow]{file}[/yellow]")
+        
+        tree.root.expand()
 
     def on_explorer_content_flow_selected(self, message: ExplorerContent.FlowSelected) -> None:
         """Listen for messages from the explorer and update this panel."""
