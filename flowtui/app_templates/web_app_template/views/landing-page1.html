@@ -1,0 +1,26 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+    <header>
+        <h1>Welcome to Flow</h1>
+        <p>Your journey starts here.</p>
+    </header>
+    
+    <section id="featured-products">
+        <h2>Featured Products</h2>
+        <div class="product-grid">
+            <!-- 🔄 Loop: for product in featured_products -->
+            <div class="product-card">
+                <h3>Product Name</h3>
+                <p>Description...</p>
+                <span>Price: $X.XX</span>
+                <button>View Details</button>
+            </div>
+            <!-- End Loop -->
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Flow App</p>
+    </footer>
+{% endblock %}
