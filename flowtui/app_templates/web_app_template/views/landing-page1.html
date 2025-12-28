@@ -39,21 +39,16 @@
 
         <section id="products" class="products-section">
             <h2>Explore Our Mock Products</h2>
-            <div class="product-grid">
-                <!-- 🔄 Loop: for product in featured_products -->
-                <div class="product-card">
-                    <h3>Flow Board</h3>
-                    <p>A smart board for your daily tasks.</p>
-                    <span>Price: $49.99</span>
-                    <a href="#" class="btn">Learn More</a>
+            
+            <div id="product-list-container">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="btn" flow:click="products.HTMX_SNIPPET_PRODUCT_LIST" flow:target="#product-list-container">
+                        🔄 Reload List
+                    </button>
                 </div>
-                <div class="product-card">
-                    <h3>Flow Monitor</h3>
-                    <p>Keep track of your app's health.</p>
-                    <span>Price: $129.00</span>
-                    <a href="#" class="btn">Learn More</a>
+                <div class="product-grid">
+                    {% include "products/_list.html" %}
                 </div>
-                <!-- End Loop -->
             </div>
         </section>
     </main>

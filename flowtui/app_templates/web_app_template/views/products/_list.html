@@ -1,0 +1,12 @@
+<!-- 
+This is a partial template.
+It expects a variable `products` to be in the context.
+-->
+{% for product in products %}
+<div class="product-card">
+    <h3>{{ product.name }}</h3>
+    <p>A smart device for your daily tasks.</p>
+    <span>Price: ${{ loop.index * 39.99 }}</span>
+    <a href="#" class="btn">Learn More</a>
+</div>
+{% endfor %}

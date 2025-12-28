@@ -11,7 +11,7 @@ db_products = {
 class Products:
     """
     Manages the product catalog.
-    Routes: LIST, CREATE
+    Routes: LIST, CREATE, HTMX_SNIPPET_PRODUCT_LIST
     """
     def get_all(self) -> dict:
         """Returns the state for the initial page load."""
@@ -38,3 +38,15 @@ class Products:
         # Convention: The key in the returned dict ("product") should match
         # the variable name used in the partial template (_item.html).
         return {"product": new_product}
+
+    def HTMX_SNIPPET_PRODUCT_LIST(self) -> dict:
+        """
+        Returns the full list of products for a complete re-render of the list.
+        In a real app, you might add pagination or filtering here.
+        """
+        print("Flow 'products.HTMX_SNIPPET_PRODUCT_LIST' executed.")
+        # Add a new mock product to demonstrate the reload is working
+        if 4 not in db_products:
+            db_products[4] = Product(id=4, name="Flow Mousepad")
+        return {"products": list(db_products.values())}
+
