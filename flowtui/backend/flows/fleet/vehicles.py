@@ -1,12 +1,12 @@
-from models.fleet.vehicle import Vehicle
+from backend.models.fleet.vehicle import Vehicle
 
 class Vehicles:
     """
     Manages the fleet of RC vehicles.
-    Routes: LIST, GET, COMMAND, STATUS
+    Routes: INDEX, GET, COMMAND, STATUS
     """
 
-    def list(self):
+    def index(self):
         """Returns a list of all vehicles."""
         pass
 

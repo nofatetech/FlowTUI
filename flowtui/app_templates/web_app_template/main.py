@@ -52,7 +52,7 @@ async def handle_flow(request: Request):
     try:
         # 1. Dynamically import the flow module
         # Convention: flow name "products" maps to "flows.products" module
-        module = importlib.import_module(f"flows.{flow_name}")
+        module = importlib.import_module(f"backend.flows.{flow_name}")
         
         # Convention: Class name is the capitalized version of the flow name, e.g., "Products"
         FlowClass = getattr(module, flow_name.capitalize())
@@ -83,7 +83,7 @@ async def handle_flow(request: Request):
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     # This is how you would call a flow from the server-side for the initial render
-    from flows.products import Products
+    from backend.flows.products import Products
     products_flow = Products()
     initial_data = products_flow.get_all()
     return templates.TemplateResponse("products/index.html", {"request": request, **initial_data})

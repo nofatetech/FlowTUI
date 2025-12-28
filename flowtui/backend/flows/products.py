@@ -1,4 +1,4 @@
-from models.product import Product
+from backend.models.product import Product
 
 # This acts as our in-memory database for the example.
 # In a real app, this would be a database connection.

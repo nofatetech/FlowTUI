@@ -124,10 +124,10 @@ class ExplorerContent(Vertical):
     def compose(self) -> ComposeResult:
         """Render the explorer by scanning the project directory."""
         
-        PROJECT_PATH = "app_templates/web_app_template"
+        BACKEND_PATH = "backend"
         
-        flows_path = os.path.join(PROJECT_PATH, "flows")
-        models_path = os.path.join(PROJECT_PATH, "models")
+        flows_path = os.path.join(BACKEND_PATH, "flows")
+        models_path = os.path.join(BACKEND_PATH, "models")
 
         flow_data = self._scan_directory(flows_path, self._parse_flow_file)
         model_data = self._scan_directory(models_path, self._parse_model_file)

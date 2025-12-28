@@ -162,8 +162,8 @@ class FlowImplementationContent(Vertical):
 
         # --- Views ---
         views_root = tree.root.add("🖼️ [b]Views[/b]")
-        PROJECT_PATH = "app_templates/web_app_template"
-        views_dir = os.path.join(PROJECT_PATH, "views")
+        WEB_APP_PATH = "app_templates/web_app_template"
+        views_dir = os.path.join(WEB_APP_PATH, "views")
         
         if os.path.isdir(views_dir):
             for file in sorted(os.listdir(views_dir)):
@@ -175,7 +175,8 @@ class FlowImplementationContent(Vertical):
 
         # --- Contracts ---
         contracts_root = tree.root.add("📜 [b]Contracts[/b]")
-        contracts_dir = os.path.join(PROJECT_PATH, "contracts")
+        BACKEND_PATH = "backend"
+        contracts_dir = os.path.join(BACKEND_PATH, "contracts")
         if os.path.isdir(contracts_dir):
             for file in sorted(os.listdir(contracts_dir)):
                 if file.endswith(".py") and not file.startswith("__"):

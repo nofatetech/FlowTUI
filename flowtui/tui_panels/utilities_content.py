@@ -70,10 +70,11 @@ class UtilitiesContent(Vertical):
 
 
     def compose(self) -> ComposeResult:
-        PROJECT_PATH = "app_templates/web_app_template"
-        services_path = os.path.join(PROJECT_PATH, "services")
-        providers_path = os.path.join(PROJECT_PATH, "providers")
-        manifest_path = os.path.join(PROJECT_PATH, "manifest.json")
+        WEB_APP_PATH = "app_templates/web_app_template"
+        BACKEND_PATH = "backend"
+        services_path = os.path.join(BACKEND_PATH, "services")
+        providers_path = os.path.join(BACKEND_PATH, "providers")
+        manifest_path = os.path.join(WEB_APP_PATH, "manifest.json")
 
         # Load the runtime manifest if it exists
         manifest_data = {}
