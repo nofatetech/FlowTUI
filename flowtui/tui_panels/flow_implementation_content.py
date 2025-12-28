@@ -70,6 +70,7 @@ class FlowImplementationContent(Vertical):
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         """When a node is clicked, publish the ElementSelected message with full context."""
+        self.app.log(f"Node selected: {event.node.label}, Data: {event.node.data}")
         if event.node.data:
             self.post_message(self.ElementSelected(
                 element_data=event.node.data,

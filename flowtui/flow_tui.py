@@ -87,5 +87,12 @@ class FlowTUI(App):
                     yield DeployInfo(classes="panel-body")
         yield Footer()
 
+    def on_flow_implementation_content_element_selected(
+        self, message: FlowImplementationContent.ElementSelected
+    ) -> None:
+        """When an element is selected in the view tree, update the inspector."""
+        inspector = self.query_one(InspectorContent)
+        inspector.on_flow_implementation_content_element_selected(message)
+
 if __name__ == "__main__":
     FlowTUI().run()
