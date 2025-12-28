@@ -94,5 +94,13 @@ class FlowTUI(App):
         inspector = self.query_one(InspectorContent)
         inspector.on_flow_implementation_content_element_selected(message)
 
+    def on_explorer_content_flow_selected(
+        self, message: ExplorerContent.FlowSelected
+    ) -> None:
+        """When a flow is selected in the explorer, update the implementation panel."""
+        flow_implementation = self.query_one(FlowImplementationContent)
+        flow_implementation.on_explorer_content_flow_selected(message)
+
+
 if __name__ == "__main__":
     FlowTUI().run()

@@ -2,16 +2,20 @@ import os
 import re
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Tree
+from textual.widgets import Tree, Static
 from textual.widgets.tree import TreeNode
 from textual.message import Message
 
+# Import the message from the explorer panel
+from tui_panels.explorer_content import ExplorerContent
+
 class FlowImplementationContent(Vertical):
     """
-    Scans HTML views and publishes detailed selection messages, including
-    file path and line content, to enable external editing.
+    Displays the implementation details (Controllers and Views) for a
+    Flow that is selected in the Explorer panel.
     """
 
+    # --- (ElementSelected and HTML parsing methods remain the same) ---
     class ElementSelected(Message):
         """Posted when an HTML element is selected in the tree."""
         def __init__(self, element_data: dict, file_path: str, original_line: str) -> None:
@@ -19,7 +23,6 @@ class FlowImplementationContent(Vertical):
             self.element_data = element_data
             self.file_path = file_path
             self.original_line = original_line
-
     
     HTML_TAG_EMOJIS = {
         "div": "📦", "p": "¶", "span": "📄", "a": "🔗", "img": "🖼️",
@@ -40,21 +43,16 @@ class FlowImplementationContent(Vertical):
     }
     
     def _parse_html_line(self, line: str) -> tuple[int, dict]:
-        """Parses a single line of HTML, also storing the original line."""
         indent = len(line) - len(line.lstrip(' '))
         content = line.strip()
-        
         match = re.match(r"<([a-zA-Z0-9]+)\s*([^>]*)>", content)
         if not match:
             return indent, {"display": content, "original_line": line}
-
         tag, attrs_str = match.groups()
         data = {"tag": tag, "original_line": line}
-
         for attr_match in re.finditer(r'([a-zA-Z0-9:-]+)="([^"]*)"', attrs_str):
             key, value = attr_match.groups()
             data[key] = value
-
         cls = data.get('class', '')
         id = data.get('id', '')
         emoji = self.HTML_TAG_EMOJIS.get(tag, self.HTML_TAG_EMOJIS["default"])
@@ -62,16 +60,13 @@ class FlowImplementationContent(Vertical):
         return indent, data
 
     def _populate_html_tree(self, parent_node: TreeNode, file_path: str):
-        """Builds a tree, attaching parsed data and file_path to each node."""
         node_stack = [(parent_node, -1)]
         try:
             with open(file_path, 'r') as f:
                 for line in f:
                     if not line.strip().startswith("<"): continue
-                    
                     indent, data = self._parse_html_line(line)
-                    data["file_path"] = file_path # Store the file path
-                    
+                    data["file_path"] = file_path
                     last_node, last_indent = node_stack[-1]
                     if indent > last_indent:
                         new_node = last_node.add(data["display"])
@@ -87,11 +82,67 @@ class FlowImplementationContent(Vertical):
                         node_stack.append((new_node, indent))
         except Exception:
             parent_node.add("⚠️ [red]Parse Error[/]")
+    
+    # --- New Dynamic Tree Logic ---
+
+    def _parse_flow_for_methods(self, file_path: str) -> list[str]:
+        """Scans a Python file and returns a list of its public method names."""
+        methods = []
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+            # A simple regex to find public methods
+            found = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content, re.MULTILINE)
+            methods = [m for m in found if not m.startswith('_')]
+        except Exception:
+            pass # Errors will be handled by the caller
+        return methods
+
+    def update_tree(self, flow_name: str, flow_file_path: str) -> None:
+        """Clear and rebuild the tree based on the selected flow."""
+        self.query_one(Tree).clear()
+        tree = self.query_one(Tree)
+        tree.root.label = f"📁 {flow_name}"
+
+        # --- Controllers ---
+        controllers_root = tree.root.add("▶️ Controllers")
+        
+        # Our opinionated, always-visible standard methods
+        standard_methods = {"get", "post", "put", "delete"}
+        
+        # Actual methods found in the file
+        actual_methods = self._parse_flow_for_methods(flow_file_path)
+        
+        for method in sorted(standard_methods):
+            label = f"📄 [b green]{method}[/]" if method in actual_methods else f"📄 [gray]{method}[/]"
+            controllers_root.add(label)
+        
+        custom_methods = [m for m in actual_methods if m not in standard_methods]
+        if custom_methods:
+            custom_root = controllers_root.add("▶️ Custom")
+            for method in sorted(custom_methods):
+                custom_root.add(f"📄 [b cyan]{method}[/]")
+
+        # --- Views ---
+        views_root = tree.root.add("🖼️ Views")
+        PROJECT_PATH = "app_templates/web_app_template" # This could be dynamic later
+        views_dir = os.path.join(PROJECT_PATH, "views")
+        
+        # This part remains the same, finding and parsing HTML files
+        if os.path.isdir(views_dir):
+            for file in sorted(os.listdir(views_dir)):
+                if file.endswith(".html") and not file.startswith("_"):
+                    view_node = views_root.add(f"📄 [b blue]{file}[/]")
+                    self._populate_html_tree(view_node, os.path.join(views_dir, file))
+        
+        tree.root.expand_all()
+
+    def on_explorer_content_flow_selected(self, message: ExplorerContent.FlowSelected) -> None:
+        """Listen for messages from the explorer and update this panel."""
+        self.update_tree(message.flow_name, message.file_path)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        """When a node is clicked, publish the ElementSelected message with full context."""
-        self.app.log(f"Node selected: {event.node.label}, Data: {event.node.data}")
-        if event.node.data:
+        if event.node.data and "tag" in event.node.data:
             self.post_message(self.ElementSelected(
                 element_data=event.node.data,
                 file_path=event.node.data.get("file_path", ""),
@@ -99,20 +150,5 @@ class FlowImplementationContent(Vertical):
             ))
 
     def compose(self) -> ComposeResult:
-        # (compose method remains largely the same as the last correct version)
-        impl_tree = Tree("📁 catalog.products")
-        
-        impl_tree.root.add("▶️ Controllers").add("📄 index")
-
-        views_root = impl_tree.root.add("🖼️ Views")
-        PROJECT_PATH = "app_templates/web_app_template"
-        views_dir = os.path.join(PROJECT_PATH, "views")
-
-        if os.path.isdir(views_dir):
-            for file in sorted(os.listdir(views_dir)):
-                if file.endswith(".html") and not file.startswith("_"):
-                    view_node = views_root.add(f"📄 [b blue]{file}[/]")
-                    self._populate_html_tree(view_node, os.path.join(views_dir, file))
-        
-        impl_tree.root.expand_all()
-        yield impl_tree
+        """Compose the initial empty tree."""
+        yield Tree("⬅️ [i]Select a Flow from the Explorer[/i]")

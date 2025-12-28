@@ -3,12 +3,21 @@ import ast
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Tree, Static
+from textual.message import Message
+
 
 class ExplorerContent(Vertical):
     """
-    A file explorer that scans a target directory and displays a structured
-    view of its Flows and Models based on opinionated conventions.
+    A file explorer that scans a target directory, displays a structured
+    view, and emits a message when a Flow is selected.
     """
+
+    class FlowSelected(Message):
+        """Posted when a flow file/node is selected in the explorer."""
+        def __init__(self, flow_name: str, file_path: str) -> None:
+            super().__init__()
+            self.flow_name = flow_name
+            self.file_path = file_path
 
     # --- Scanner & Parser Logic ---
 
@@ -59,14 +68,11 @@ class ExplorerContent(Vertical):
         """
         results = {}
         if not os.path.isdir(root_path):
-            # Return a structure that the tree builder can understand as an error.
             results["⚠️ [red]Directory Not Found[/]"] = {}
             return results
 
         for dirpath, _, filenames in os.walk(root_path):
-            # Find the current position in the results dict
             current_level = results
-            # Create a relative path to build the nested dict keys
             rel_path = os.path.relpath(dirpath, root_path)
             if rel_path != ".":
                 for part in rel_path.split(os.sep):
@@ -75,11 +81,15 @@ class ExplorerContent(Vertical):
             for filename in sorted(filenames):
                 if filename.endswith(".py") and not filename.startswith("__"):
                     module_name = filename.replace(".py", "")
+                    file_path = os.path.join(dirpath, filename)
                     try:
-                        with open(os.path.join(dirpath, filename), "r") as f:
+                        with open(file_path, "r") as f:
                             source = f.read()
-                        # Parsed methods/attributes are stored under a special key
-                        current_level.setdefault(module_name, {})["_items"] = parser_func(source)
+                        
+                        # Store items and the file path
+                        items = parser_func(source)
+                        current_level.setdefault(module_name, {})["_items"] = items
+                        current_level[module_name]["_file_path"] = file_path
                     except Exception:
                         current_level.setdefault(module_name, {})["_items"] = ["⚠️ [red]Read Error[/]"]
         return results
@@ -87,19 +97,27 @@ class ExplorerContent(Vertical):
     def _populate_tree(self, tree_node, data: dict, icon: str, name_style: str):
         """Helper function to recursively populate a Tree widget from nested data."""
         for name, content in data.items():
-            # Add a node for the directory/file
             sub_node = tree_node.add(f"{icon} [b {name_style}]{name}[/]")
             
-            # If there are items (methods/attributes), add them
+            # Attach the file path to the node's data if it exists
+            if "_file_path" in content:
+                sub_node.data = {"file_path": content["_file_path"], "flow_name": name}
+
             if "_items" in content:
                 for item in content["_items"]:
                     sub_node.add(item)
             
-            # Recurse for any sub-directories
-            # We filter out the special '_items' key before recursing
-            sub_dirs = {k: v for k, v in content.items() if k != "_items"}
+            sub_dirs = {k: v for k, v in content.items() if k not in ["_items", "_file_path"]}
             if sub_dirs:
                 self._populate_tree(sub_node, sub_dirs, icon, name_style)
+
+    def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+        """When a flow node is selected, post a message."""
+        if event.node.data and "file_path" in event.node.data:
+            self.post_message(self.FlowSelected(
+                flow_name=event.node.data["flow_name"],
+                file_path=event.node.data["file_path"]
+            ))
 
     # --- UI Composition ---
 
