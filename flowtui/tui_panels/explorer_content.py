@@ -14,21 +14,23 @@ class ExplorerContent(Vertical):
 
     def _parse_flow_file(self, source_code: str) -> list[str]:
         """
-        Parses a Python file's source code to find a class and its public methods.
-        Convention: The file contains one class, and public methods don't start with '_'.
+        Parses a Flow file's source to find the class docstring and extract "Routes:".
+        Convention: The file contains one class, with a docstring line like:
+        "Routes: GET, POST, DELETE"
         """
-        methods = []
         try:
             tree = ast.parse(source_code)
             for node in tree.body:
                 if isinstance(node, ast.ClassDef):
-                    # Found the class, now find its methods
-                    for method_node in node.body:
-                        if isinstance(method_node, ast.FunctionDef) and not method_node.name.startswith('_'):
-                            methods.append(f"⚡️ {method_node.name}")
+                    docstring = ast.get_docstring(node)
+                    if docstring:
+                        for line in docstring.split('\n'):
+                            if line.strip().lower().startswith("routes:"):
+                                routes = line.split(":", 1)[1].strip()
+                                return [f"↳ [green]{r.strip()}[/]" for r in routes.split(",")]
+            return ["- [gray]No routes defined[/]"]
         except Exception:
             return ["⚠️ [red]Parse Error[/]"]
-        return methods
 
     def _parse_model_file(self, source_code: str) -> list[str]:
         """

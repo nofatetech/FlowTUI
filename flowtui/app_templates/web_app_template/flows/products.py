@@ -10,8 +10,8 @@ db_products = {
 
 class Products:
     """
-    This class represents a "Flow" for managing products.
-    Each public method is an action that can be triggered from the frontend.
+    Manages the product catalog.
+    Routes: LIST, CREATE
     """
     def get_all(self) -> dict:
         """Returns the state for the initial page load."""
