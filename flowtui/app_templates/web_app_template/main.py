@@ -4,12 +4,39 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+import json
 from pathlib import Path
+
+# --- Mock Database Connection ---
+def connect_to_db():
+    """Simulates connecting to a database and returns a status."""
+    # In a real app, this would involve SQLAlchemy, psycopg2, etc.
+    print("Attempting to connect to the database...")
+    # Simulate a successful connection
+    print("Database connection successful.")
+    return "Connected"
 
 # --- App Setup ---
 # Use pathlib to ensure paths are relative to this script's location
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI()
+
+@app.on_event("startup")
+def startup_event():
+    """This function runs when the FastAPI application starts."""
+    db_status = connect_to_db()
+    
+    # Convention: The app writes its runtime status to a manifest file.
+    # The TUI can then read this file without needing to run app logic.
+    manifest = {
+        "database": {
+            "status": db_status
+        }
+    }
+    with open(BASE_DIR / "manifest.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+    print("Application manifest generated.")
+
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "views")
 
