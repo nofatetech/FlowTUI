@@ -76,7 +76,7 @@ class FlowTUI(App):
 
             # --- COLUMN 3: INSPECTOR ---
             with Panel("Inspector", "🔍", id="col-3"):
-                yield InspectorContent(classes="panel-body")
+                yield InspectorContent()
 
             # --- COLUMN 4: UTILITIES & DEPLOY ---
             with Vertical(id="col-4"):
