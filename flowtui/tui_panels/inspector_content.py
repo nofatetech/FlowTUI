@@ -26,18 +26,27 @@ class InspectorContent(VerticalScroll):
         """Initially, the inspector is empty."""
         self.mount(Static("⬅️ [i]Select an HTML element to inspect.[/i]", classes="placeholder"))
 
+    
+    OPINIONATED_FLOW_ATTRS = [
+        "flow:click", "flow:submit", "flow:change",
+        "flow:target",
+        "flow:before-send", "flow:after-swap",
+    ]
+
     def update_inspector(self, data: dict) -> None:
         self.query("*").remove()
         self.mount(Static("🆔 [b]Identity[/b]"))
         self.mount(Horizontal(
             Static("Tag  :", classes="label"),
             Input(value=data.get("tag", ""), id="inp_tag", classes="prop-input"),
+            Button("Edit", id="edit_tag", classes="edit-btn"),
             classes="prop-row"
         ))
         if "id" in data:
             self.mount(Horizontal(
                 Static("ID   :", classes="label"),
                 Input(value=data.get("id", ""), id="inp_id", classes="prop-input"),
+                Button("Edit", id="edit_id", classes="edit-btn"),
                 classes="prop-row"
             ))
         if "class" in data:
@@ -45,17 +54,16 @@ class InspectorContent(VerticalScroll):
             self.mount(Horizontal(
                 Static("CSS  :", classes="label"),
                 Input(value=data.get("class", ""), id="inp_class", classes="prop-input"),
+                Button("Edit", id="edit_class", classes="edit-btn"),
                 classes="prop-row"
             ))
         
         self.mount(Static("\n⚡️ [b]Bindings & Hooks[/b]"))
-        flow_attrs = {k: v for k, v in data.items() if k.startswith("flow:")}
-        if flow_attrs:
-            for key, value in flow_attrs.items():
-                safe_prop_id = key.replace(":", "_") # Sanitize the ID here
-                self.mount(self.create_code_editor(f"[cyan]{key}[/]", value, safe_prop_id))
-        else:
-            self.mount(Static("  [gray]No flow bindings found.[/]"))
+        
+        # Display our opinionated list of flow attributes
+        for attr in self.OPINIONATED_FLOW_ATTRS:
+            current_value = data.get(attr, "")
+            self.mount(self.create_code_editor(f"[cyan]{attr}[/]", current_value, attr))
 
     def on_flow_implementation_content_element_selected(self, message: FlowImplementationContent.ElementSelected) -> None:
         """Receives the message and stores the context, then updates the UI."""
@@ -69,46 +77,49 @@ class InspectorContent(VerticalScroll):
         if not self.file_path or not self.original_line:
             return
 
-        # 1. Update our in-memory data with the new value from the input
         input_id = event.input.id
-        attr_key = input_id.replace("inp_", "") # e.g., "inp_id" -> "id"
-        self.element_data[attr_key] = event.value
+        if not input_id: return
+        
+        attr_key = input_id.replace("inp_", "")
 
-        # 2. Reconstruct the new HTML line from the (potentially updated) data
+        # Update data, removing the attribute if the new value is empty
+        if event.value:
+            self.element_data[attr_key] = event.value
+        elif attr_key in self.element_data:
+            del self.element_data[attr_key]
+
         tag = self.element_data.get("tag", "div")
         attrs_parts = []
         for key, val in self.element_data.items():
             if key not in ["tag", "display", "original_line", "file_path"]:
-                attrs_parts.append(f'{key}="{val}"')
+                # Ensure we only add attributes with non-empty values
+                if val:
+                    attrs_parts.append(f'{key}="{val}"')
         
-        # Preserve original indentation
+        attrs_str = " " + " ".join(sorted(attrs_parts)) if attrs_parts else ""
+        
         indentation = " " * (len(self.original_line) - len(self.original_line.lstrip(' ')))
-        new_line = f"{indentation}<{tag} {' '.join(attrs_parts)}>\n"
+        new_line = f"{indentation}<{tag}{attrs_str}>\n"
 
-        # 3. Read, replace, and write the file
         try:
-            with open(self.file_path, "r") as f:
-                content = f.read()
+            with open(self.file_path, "r") as f: content = f.read()
+            content = content.replace(self.original_line, new_line, 1)
+            with open(self.file_path, "w") as f: f.write(content)
             
-            content = content.replace(self.original_line, new_line)
-
-            with open(self.file_path, "w") as f:
-                f.write(content)
-            
-            # 4. Update the original_line so we can make subsequent edits
             self.original_line = new_line
             self.app.log(f"✅ Saved changes to {os.path.basename(self.file_path)}")
+            # No need to manually refresh the inspector, it's already showing the new value
 
         except Exception as e:
             self.app.log(f"❌ [bold red]Error saving file:[/] {e}")
 
-    # (create_code_editor and on_button_pressed remain for future use)
     def create_code_editor(self, label: str, value: str, prop_id: str) -> Horizontal:
-        display_value = value.replace('\n', ' ↵ ').strip()
+        """Creates a row with a label, input, and edit button."""
+        safe_id = prop_id.replace(":", "_")
         return Horizontal(
             Static(label, classes="label", shrink=True),
-            Static(f"[i gray50]{display_value or '...'}[/]", classes="code-preview"),
-            Button("Edit", id=f"edit_{prop_id}", classes="edit-btn"),
+            Input(value=value, id=f"inp_{safe_id}", classes="prop-input"),
+            Button("Edit", id=f"edit_{safe_id}", classes="edit-btn"),
             classes="prop-row"
         )
     
@@ -125,24 +136,21 @@ class InspectorContent(VerticalScroll):
             with open(self.file_path, "r") as f:
                 lines = f.readlines()
             
-            # Find the 1-based line number for the editor
             line_number = -1
             for i, line in enumerate(lines):
+                # Use strip() for a more robust comparison
                 if line.strip() == self.original_line.strip():
                     line_number = i + 1
                     break
             
             if line_number == -1:
-                self.app.log(f"Could not find line in file: {self.original_line}")
+                self.app.log(f"Could not find line in file: {self.original_line.strip()}")
                 return
 
-            # This is the Textual action that suspends the app
             self.app.action_suspend_process()
-
-            # Launch Neovim at the correct file and line
             subprocess.run(["nvim", f"+{line_number}", self.file_path])
             
-            self.app.log("Resumed TUI. Note: Manual refresh might be needed to see changes.")
+            self.app.log("Resumed TUI. Note: Manual refresh may be needed to see changes.")
 
         except Exception as e:
             self.app.log(f"Error opening editor: {e}")
