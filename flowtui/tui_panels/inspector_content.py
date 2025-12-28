@@ -28,8 +28,17 @@ class InspectorContent(VerticalScroll):
 
     
     OPINIONATED_FLOW_ATTRS = [
+        # Core Triggers
         "flow:click", "flow:submit", "flow:change",
+        # Real-time & Polling
+        "flow:trigger", "flow:poll",
+        # UX & Polish
+        "flow:loading-class", "flow:transition", "flow:push-url",
+        # Advanced Control Flow
+        "flow:on-success",
+        # Core Logic
         "flow:target",
+        # JS Hooks
         "flow:before-send", "flow:after-swap",
     ]
 
