@@ -52,7 +52,8 @@ class InspectorContent(VerticalScroll):
         flow_attrs = {k: v for k, v in data.items() if k.startswith("flow:")}
         if flow_attrs:
             for key, value in flow_attrs.items():
-                self.mount(self.create_code_editor(f"[cyan]{key}[/]", value, key))
+                safe_prop_id = key.replace(":", "_") # Sanitize the ID here
+                self.mount(self.create_code_editor(f"[cyan]{key}[/]", value, safe_prop_id))
         else:
             self.mount(Static("  [gray]No flow bindings found.[/]"))
 
