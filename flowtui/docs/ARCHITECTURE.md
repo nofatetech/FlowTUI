@@ -47,13 +47,16 @@ class login(BaseFlow):
 
 - **Templates are HTML:** Views are standard HTML files.
 - **Declarative Attributes for Wiring:** We use a special `flow:` attribute namespace to create a declarative, co-located link between the view, the server, and client-side behaviors.
-  - `flow:submit="auth.login"`: Specifies which Flow to trigger on a form submission.
-  - `flow:click="cart.add_item"`: Specifies which Flow to trigger on a click.
-  - `flow:verb="post"`: Defines the HTTP method to use (defaults to `get`).
-  - `flow:target="#form-container"`: A CSS selector defining which part of the page should be updated by the Flow's response.
-  - `flow:before-send="..."`: Executes a block of client-side JavaScript *before* the request is sent to the server.
+  - `flow:click`, `flow:submit`, `flow:change`: Specifies which Flow to trigger on a user interaction.
+  - `flow:trigger`: Triggers a flow on other events (e.g., `every 5s`, `keyup changed delay:500ms`).
+  - `flow:poll`: A shorthand to periodically trigger a flow (e.g., `flow:poll="15s"`).
+  - `flow:target`: A CSS selector defining which part of the page should be updated by the Flow's response.
+  - `flow:loading-class`: A CSS class to apply to an element during the request.
+  - `flow:transition`: A CSS class to manage smooth transitions on new content.
+  - `flow:push-url`: Updates the browser's URL after a successful request.
+  - `flow:on-success`: Triggers a secondary flow after the primary one completes.
+  - `flow:before-send="..."`: Executes a block of client-side JavaScript *before* the request is sent.
   - `flow:after-swap="..."`: Executes JavaScript *after* a successful server response has been swapped into the DOM.
-  - `flow:on-error="..."`: Executes JavaScript if the server returns an error.
 
 ## 5. The Frontend (`flow.js`) & The Core Reactive Loop
 

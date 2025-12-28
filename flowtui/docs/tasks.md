@@ -10,9 +10,11 @@
 
 ## Near-Term Tasks (Medium)
 
-*   [ ] Inspector: editable fields (still mocked)
-*   [ ] Click → selection propagation everywhere
-*   [ ] View tree refinements (components, slots, bindings)
+*   [x] Inspector: Live, editable fields with file write-back
+*   [x] Inspector: Show opinionated, predefined `flow:` attributes
+*   [x] Inspector: "Edit in Neovim" button for all properties
+*   [x] Click → selection propagation (View Tree → Inspector)
+*   [x] View tree: Add emojis for element types
 *   [ ] Flow discovery rules (dot notation, folders)
 *   [ ] Better visual hierarchy & spacing
 *   [ ] Keyboard-first navigation
