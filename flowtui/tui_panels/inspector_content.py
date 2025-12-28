@@ -1,9 +1,10 @@
 import os
+import re
 import subprocess
 import tempfile
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll
-from textual.widgets import Static, Input, Button
+from textual.widgets import Static, Input, Button, Label
 from textual.binding import Binding
 
 # Import the message classes from the other panels
@@ -27,26 +28,95 @@ class InspectorContent(VerticalScroll):
         self.file_path: str = ""
         self.current_context = None # "html" or "method"
 
+    def compose(self) -> ComposeResult:
+        """Create dedicated containers for each inspector state."""
+        yield Vertical(
+            Static("⬅️ [i]Select an element to inspect.[/i]", classes="placeholder"),
+            id="placeholder-container"
+        )
+        yield Vertical(id="method-inspector-container")
+        yield Vertical(id="html-inspector-container")
+
     def on_mount(self) -> None:
-        """Initially, the inspector is empty."""
-        self.mount(Static("⬅️ [i]Select an element to inspect.[/i]", classes="placeholder"))
+        """Hide the inspector containers on startup."""
+        self.query_one("#method-inspector-container").display = False
+        self.query_one("#html-inspector-container").display = False
 
     # --- Method Inspector ---
 
+    def _get_method_snippet(self, content: str, route_name: str, verb: str) -> str:
+        """Extracts a snippet of a method's source code."""
+        method_name = f"{route_name.lower()}_{verb.lower()}"
+        
+        # First, try the full routeName_verb convention
+        pattern = re.compile(fr"^\s*(async def|def)\s+{method_name}\s*\(.*?\):\s*\n(?:(?!\s*(async def|def)\s).*\n?)*", re.MULTILINE)
+        match = re.search(pattern, content)
+
+        if not match and verb.lower() == 'get':
+            # Second, try the special case where GET is just the route name
+            method_name = route_name.lower()
+            pattern = re.compile(fr"^\s*(async def|def)\s+{method_name}\s*\(.*?\):\s*\n(?:(?!\s*(async def|def)\s).*\n?)*", re.MULTILINE)
+            match = re.search(pattern, content)
+
+        if match:
+            snippet = match.group(0).strip()
+            lines = snippet.split('\n')
+            if len(lines) > 5:
+                # Show first 4 lines and an ellipsis
+                return "\n".join(lines[:4]) + "\n    ..."
+            return "\n".join(lines)
+        return ""
+
     def update_method_inspector(self, data: dict) -> None:
         """Renders the inspector for a controller method."""
-        self.query("*").remove()
-        
-        status, color = ("Implemented", "green") if data['is_implemented'] else ("Not Implemented", "gray")
+        # Toggle visibility
+        self.query_one("#placeholder-container").display = False
+        self.query_one("#html-inspector-container").display = False
+        container = self.query_one("#method-inspector-container")
+        container.display = True
 
-        self.mount(Static("▶️ [b]Controller Method[/b]"))
-        self.mount(Horizontal(Static("Flow :", classes="label"), Static(f"[cyan]{data['flow_name']}[/]"), classes="prop-row"))
-        self.mount(Horizontal(Static("Route:", classes="label"), Static(f"[cyan]{data['route_name']}[/]"), classes="prop-row"))
-        self.mount(Horizontal(Static("Verb :", classes="label"), Static(f"[cyan]{data['verb'].upper()}[/]"), classes="prop-row"))
-        self.mount(Horizontal(Static("Status:", classes="label"), Static(f"[{color}]{status}[/{color}]"), classes="prop-row"))
+        # Clear and repopulate
+        container.query("*").remove()
         
-        self.mount(Static("\n[b]Actions[/b]"))
-        self.mount(Button("Edit in Neovim", id="edit_method", variant="primary", classes="edit-btn"))
+        is_implemented = data.get('is_implemented', False)
+        status, color = ("Implemented", "green") if is_implemented else ("Not Implemented", "gray")
+
+        container.mount(Static("▶️ [b]Controller Method[/b]"))
+        container.mount(Horizontal(Static("Flow :", classes="label"), Static(f"[cyan]{data.get('flow_name', 'N/A')}[/]"), classes="prop-row"))
+        container.mount(Horizontal(Static("Route:", classes="label"), Static(f"[cyan]{data.get('route_name', 'N/A')}[/]"), classes="prop-row"))
+        container.mount(Horizontal(Static("Verb :", classes="label"), Static(f"[cyan]{data.get('verb', 'N/A').upper()}[/]"), classes="prop-row"))
+        container.mount(Horizontal(Static("Status:", classes="label"), Static(f"[{color}]{status}[/{color}]"), classes="prop-row"))
+        
+        container.mount(Label("\n[b]Details[/b]"))
+
+        try:
+            with open(self.file_path, "r") as f:
+                content = f.read()
+        except Exception:
+            content = ""
+
+        if is_implemented and content:
+            snippet = self._get_method_snippet(content, data['route_name'], data['verb'])
+            if snippet:
+                container.mount(Label("Code Snippet:", classes="label"))
+                container.mount(Static(snippet, classes="code-preview"))
+        elif not is_implemented:
+            expected_method = f"{data['route_name'].lower()}_{data['verb'].lower()}"
+            container.mount(Horizontal(
+                Static("Expected Name:", classes="label"), 
+                Static(f"[yellow]{expected_method}[/yellow]"),
+                classes="prop-row"
+            ))
+            if data['verb'].lower() == 'get':
+                 container.mount(Horizontal(
+                    Static(" ", classes="label"), 
+                    Static(f"or [yellow]{data['route_name'].lower()}[/yellow]"),
+                    classes="prop-row"
+                ))
+
+        container.mount(Static("\n[b]Actions[/b]"))
+        button_label = "Edit in Neovim" if is_implemented else "Implement Method"
+        container.mount(Button(button_label, id="edit_method", variant="primary"))
 
     # --- HTML Inspector ---
     
@@ -66,35 +136,44 @@ class InspectorContent(VerticalScroll):
     ]
 
     def update_inspector(self, data: dict) -> None:
-        self.query("*").remove()
-        self.mount(Static("🆔 [b]Identity[/b]"))
-        self.mount(Horizontal(
+        """Renders the inspector for an HTML element."""
+        # Toggle visibility
+        self.query_one("#placeholder-container").display = False
+        self.query_one("#method-inspector-container").display = False
+        container = self.query_one("#html-inspector-container")
+        container.display = True
+        
+        # Clear and repopulate
+        container.query("*").remove()
+
+        container.mount(Static("🆔 [b]Identity[/b]"))
+        container.mount(Horizontal(
             Static("Tag  :", classes="label"),
             Input(value=data.get("tag", ""), id="inp_tag", classes="prop-input"),
             Button("Edit", id="edit_tag", classes="edit-btn"),
             classes="prop-row"
         ))
         if "id" in data:
-            self.mount(Horizontal(
+            container.mount(Horizontal(
                 Static("ID   :", classes="label"),
                 Input(value=data.get("id", ""), id="inp_id", classes="prop-input"),
                 Button("Edit", id="edit_id", classes="edit-btn"),
                 classes="prop-row"
             ))
         if "class" in data:
-            self.mount(Static("\n🎨 [b]Styling[/b]"))
-            self.mount(Horizontal(
+            container.mount(Static("\n🎨 [b]Styling[/b]"))
+            container.mount(Horizontal(
                 Static("CSS  :", classes="label"),
                 Input(value=data.get("class", ""), id="inp_class", classes="prop-input"),
                 Button("Edit", id="edit_class", classes="edit-btn"),
                 classes="prop-row"
             ))
         
-        self.mount(Static("\n⚡️ [b]Bindings & Hooks[/b]"))
+        container.mount(Static("\n⚡️ [b]Bindings & Hooks[/b]"))
         
         for attr in self.OPINIONATED_FLOW_ATTRS:
             current_value = data.get(attr, "")
-            self.mount(self.create_code_editor(f"[cyan]{attr}[/]", current_value, attr))
+            container.mount(self.create_code_editor(f"[cyan]{attr}[/]", current_value, attr))
 
     # --- Message Handlers & Event Logic ---
 

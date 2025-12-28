@@ -188,11 +188,31 @@ class FlowImplementationContent(Vertical):
         self.update_tree(message.flow_name, message.file_path)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        if event.node.data and "tag" in event.node.data:
+        """Post a message when a verb or an HTML element is selected."""
+        self._on_tree_node_selected(event)
+    
+    def _on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+        if not event.node.data:
+            return
+
+        # Case 1: A controller method/verb was selected
+        if "verb" in event.node.data:
+            data = event.node.data
+            self.post_message(self.MethodSelected(
+                flow_name=data["flow_name"],
+                route_name=data["route_name"],
+                verb=data["verb"],
+                is_implemented=data["is_implemented"],
+                file_path=data["file_path"]
+            ))
+        
+        # Case 2: An HTML element was selected
+        elif "tag" in event.node.data:
+            data = event.node.data
             self.post_message(self.ElementSelected(
-                element_data=event.node.data,
-                file_path=event.node.data.get("file_path", ""),
-                original_line=event.node.data.get("original_line", "")
+                element_data=data,
+                file_path=data.get("file_path", ""),
+                original_line=data.get("original_line", "")
             ))
 
     def compose(self) -> ComposeResult:

@@ -47,7 +47,8 @@ class FlowTUI(App):
     }
     #col-3 .code-preview {
         width: 60%;
-        height: 1;
+        height: auto;
+        max-height: 5;
         content-align: left middle;
         background: #2a2a2a;
         padding: 0 1;
