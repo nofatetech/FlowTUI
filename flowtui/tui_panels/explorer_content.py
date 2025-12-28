@@ -115,7 +115,7 @@ class ExplorerContent(Vertical):
         model_data = self._scan_directory(models_path, self._parse_model_file)
 
         # --- Build Flows (Domains) Tree ---
-        flows_tree = Tree("📦 [b]Flows (Domains)[/]")
+        flows_tree = Tree("📦 [b]Domains > Flows[/]")
         flows_tree.root.expand()
         self._populate_tree(flows_tree.root, flow_data, "▶️", "cyan")
         yield flows_tree
