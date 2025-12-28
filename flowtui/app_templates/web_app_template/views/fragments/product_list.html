@@ -1,0 +1,10 @@
+<ul class="product-list">
+  {% for p in products %}
+    <li>
+      <strong>{{ p.name }}</strong>
+      <span>${{ "%.2f"|format(p.price) }}</span>
+    </li>
+  {% else %}
+    <li class="empty">No products found</li>
+  {% endfor %}
+</ul>

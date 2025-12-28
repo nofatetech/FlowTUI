@@ -1,4 +1,11 @@
+from flow_system import BaseFlow
 from backend.models.product import Product
+from contracts.products import (
+    ProductSearchInput,
+    ProductListResult
+)
+from services.product_service import ProductService
+
 
 # This acts as our in-memory database for the example.
 # In a real app, this would be a database connection.
@@ -12,20 +19,32 @@ class Products:
     """
     Manages the product catalog.
     Routes: INDEX, HTMX_SNIPPET_PRODUCT_LIST
+    Flows: index, htmx_blocks
     """
-    def index_get(self) -> dict:
-        """index get."""
-        print("index get")
-        return {} # ??
+    # TODO: fix
 
-    def HTMX_SNIPPET_PRODUCT_LIST(self) -> dict:
+    # GET default verb controller 
+    class index(BaseFlow):
+        consumes = ProductSearchInput
+        produces = ProductListResult
+        template = "fragments/product_list.html"
+
+        def get(self, input: ProductSearchInput) -> ProductListResult:
+            products = ProductService.search(input.query)
+            return ProductListResult(products=products)
+
+    # POST verb controller
+    class POST_htmx_blocks(BaseFlow):
         """
-        Returns the full list of products for a complete re-render of the list.
-        In a real app, you might add pagination or filtering here.
+        Returns html blocks depending on what the frontend needs. 
         """
-        print("Flow 'products.HTMX_SNIPPET_PRODUCT_LIST' executed.")
-        # Add a new mock product to demonstrate the reload is working
-        if 4 not in db_products:
-            db_products[4] = Product(id=4, name="Flow Mousepad")
-        return {"products": list(db_products.values())}
+        # TODO: fix
+        consumes = ProductSearchInput
+        produces = ProductListResult
+        template = "fragments/product_list.html"
+
+        def get(self, input: ProductSearchInput) -> ProductListResult:
+            products = ProductService.search(input.query)
+            return ProductListResult(products=products)
+
 

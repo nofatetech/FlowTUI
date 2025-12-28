@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import List
 
 class ProductInput(BaseModel):
     """
@@ -13,3 +14,15 @@ class ProductOutput(BaseModel):
     """
     id: int
     name: str
+
+class ProductItem(BaseModel):
+    id: int
+    name: str
+    price: float
+
+class ProductSearchInput(BaseModel):
+    query: str = ""
+
+class ProductListResult(BaseModel):
+    products: List[ProductItem]
+

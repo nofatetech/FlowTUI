@@ -1,63 +1,80 @@
 {% extends "layouts/base.html" %}
 
 {% block content %}
-    <header class="main-header">
-        <nav>
-            <a href="/" class="logo">Flow.TUI</a>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#products">Products</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
+<header class="main-header">
+    <nav>
+        <a href="/" class="logo">Flow.TUI</a>
+        <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#products">Products</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+</header>
 
-    <main>
-        <section id="hero" class="hero-section">
-            <h1>Build Your Ideas, Faster.</h1>
-            <p class="subtitle">Flow.TUI streamlines full-stack development with visual tools and declarative components.</p>
-            <button class="btn primary" flow:click="onboarding.start">Get Started Now</button>
-        </section>
+<main>
+    <section id="hero" class="hero-section">
+        <h1>Build Your Ideas, Faster.</h1>
+        <p class="subtitle">Flow.TUI streamlines full-stack development with visual tools and declarative components.
+        </p>
+        <button class="btn primary" flow:click="onboarding.start">Get Started Now</button>
+    </section>
 
-        <section id="features" class="features-section">
-            <h2>Key Features</h2>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>Visual Explorer</h3>
-                    <p>Navigate your application's architecture with ease.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Live Inspector</h3>
-                    <p>Edit components, bindings, and code in real-time.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Multi-Platform Views</h3>
-                    <p>Manage web and 3D application structures from one place.</p>
-                </div>
-            </div>
-        </section>
+    <section>
+        <input type="search" placeholder="Search products..." flow:change="products.list"
+            flow:trigger="keyup changed delay:300ms" flow:target="#product-results" />
 
-        <section id="products" class="products-section">
-            <h2>Explore Our Mock Products</h2>
-            
-            <div id="product-list-container">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <button class="btn" flow:click="products.HTMX_SNIPPET_PRODUCT_LIST" flow:target="#product-list-container">
-                        🔄 Reload List
-                    </button>
-                </div>
-                <div class="product-grid">
-                    {% include "products/_list.html" %}
-                </div>
-            </div>
-        </section>
-    </main>
+        <button flow:click="products.list" flow:target="#product-results">
+            Reload
+        </button>
 
-    <footer class="main-footer">
-        <p>&copy; 2025 Flow.TUI. All rights reserved.</p>
-        <div class="footer-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+        <div id="product-results" flow:poll="30s" flow:target="#product-results">
+            <!-- initial render -->
+            {% include "fragments/product_list.html" %}
         </div>
-    </footer>
+
+    </section>
+
+    <section id="features" class="features-section">
+        <h2>Key Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Visual Explorer</h3>
+                <p>Navigate your application's architecture with ease.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Live Inspector</h3>
+                <p>Edit components, bindings, and code in real-time.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Multi-Platform Views</h3>
+                <p>Manage web and 3D application structures from one place.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="products-section">
+        <h2>Explore Our Mock Products</h2>
+
+        <div id="product-list-container">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn" flow:click="products.HTMX_SNIPPET_PRODUCT_LIST"
+                    flow:target="#product-list-container">
+                    🔄 Reload List
+                </button>
+            </div>
+            <div class="product-grid">
+                {% include "products/_list.html" %}
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="main-footer">
+    <p>&copy; 2025 Flow.TUI. All rights reserved.</p>
+    <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+    </div>
+</footer>
 {% endblock %}
