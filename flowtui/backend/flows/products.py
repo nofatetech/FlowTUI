@@ -17,11 +17,19 @@ db_products = {
 
 class Products:
     """
-    Manages the product catalog.
-    Routes: INDEX, HTMX_SNIPPET_PRODUCT_LIST
-    Flows: index, htmx_blocks
+    Manages the products domain.
+    # TODO: take out this: Routes: INDEX, HTMX_SNIPPET_PRODUCT_LIST
+    # TODO: take out this: Flows: index, htmx_blocks
     """
     # TODO: fix
+
+
+
+    # ROUTES
+    # implement optional routes that point to flows, so we dont have to use the whole flow name;
+    # are routes per flow, per domain? i think per domain
+
+
 
     # FLOW: index
     class index(BaseFlow):

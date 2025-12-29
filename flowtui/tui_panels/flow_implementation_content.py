@@ -95,61 +95,115 @@ class FlowImplementationContent(Vertical):
     
     # --- New Dynamic Tree Logic ---
 
-    def _get_flow_structure(self, file_path: str) -> tuple[list[str], set[str]]:
+    def _get_flow_structure(self, file_path: str) -> dict[str, dict[str, list[str] | set[str]]]:
         """
-        Parses a flow file to get a list of routes from the docstring and a
-        set of all public method names.
+        Parses a flow file to find BaseFlow subclasses (flows), their routes from
+        docstrings, and their public methods.
+        Returns a dict like:
+        {
+            "flow_name": {
+                "routes": ["ROUTE1", "ROUTE2"],
+                "methods": {"get", "post"}
+            },
+            ...
+        }
         """
-        routes: list[str] = []
-        methods: set[str] = set()
+        flow_data = {}
         try:
             with open(file_path, 'r') as f:
                 content = f.read()
 
-            # 1. Get all public method names using regex
-            found_methods = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content, re.MULTILINE)
-            methods = {m.lower() for m in found_methods if not m.startswith('_')}
+            # Regex to find inner classes inheriting from BaseFlow.
+            # It captures: 
+            # Group 1: flow_name (the name of the inner class)
+            # Group 3/4: docstring content (optional)
+            # Group 5: class body
+            # The lookahead `(?=\n\s*class\s+\w+|\Z)` ensures it stops before the next class definition or at the end of the file.
+            flow_class_pattern = re.compile(
+                r"class\s+(\w+)\s*\(\s*BaseFlow\s*\)\s*:\s*(?:(?:\"\"\"(.*?)\"\"\")|(?:\'\'\'(.*?)\'\'\'))?([\s\S]*?)(?=\n\s*class\s+\w+|\Z)",
+                re.MULTILINE
+            )
+            
+            for match in flow_class_pattern.finditer(content):
+                flow_name = match.group(1)
+                # Extract docstring content, handling both triple double-quotes and triple single-quotes
+                docstring = match.group(2) or match.group(3) or "" 
+                class_body = match.group(4)
 
-            # 2. Get routes from the class docstring
-            class_match = re.search(r'class \w+:\s*"""(.*?)"""', content, re.DOTALL)
-            if class_match:
-                docstring = class_match.group(1)
-                routes_match = re.search(r'Routes:\s*([A-Z0-9_, ]+)', docstring, re.IGNORECASE)
-                if routes_match:
-                    routes_str = routes_match.group(1)
-                    routes = [route.strip() for route in routes_str.split(',')]
-        
-        except Exception:
-            # Errors will be handled by the caller
-            pass
-        return routes, methods
+                current_flow_routes = []
+                if docstring:
+                    # Search for 'Routes:' within the extracted docstring
+                    routes_match = re.search(r'Routes:\s*([A-Z0-9_, ]+)', docstring, re.IGNORECASE)
+                    if routes_match:
+                        routes_str = routes_match.group(1)
+                        current_flow_routes = [route.strip() for route in routes_str.split(',')]
 
-    def _update_tree_for_flow(self, flow_name: str, flow_file_path: str) -> None:
+                current_flow_methods = set()
+                if class_body:
+                    # Find all public methods defined directly within this flow class's body
+                    # We look for 'def ' followed by a method name and an opening parenthesis.
+                    found_methods = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', class_body, re.MULTILINE)
+                    # Convert method names to lowercase and exclude private methods (starting with '_')
+                    current_flow_methods = {m.lower() for m in found_methods if not m.startswith('_')}
+                
+                # Only add to flow_data if routes or methods were found, indicating a valid flow definition
+                if current_flow_routes or current_flow_methods:
+                    flow_data[flow_name] = {
+                        "routes": current_flow_routes,
+                        "methods": current_flow_methods
+                    }
+
+        except Exception as e:
+            # Log any parsing errors for debugging purposes.
+            print(f"Error parsing flow file {file_path}: {e}")
+            pass # Continue processing other files if an error occurs
+        return flow_data
+
+    def _update_tree_for_flow(self, flow_name_full: str, flow_file_path: str) -> None:
         """Clear and rebuild the tree to show the implementation of a backend Flow."""
         tree = self.query_one(Tree)
         tree.clear()
-        tree.root.label = f"📁 {flow_name}"
+        tree.root.label = f"📁 {flow_name_full}" # e.g., fleet.vehicles.index
+
+        # Get the structure for all flows defined in this file
+        flow_structures = self._get_flow_structure(flow_file_path)
+        
+        # Extract the specific flow name (e.g., "index" from "fleet.vehicles.index")
+        selected_flow_name = flow_name_full.split('.')[-1] 
+        
+        # Get the data for the selected flow
+        flow_data = flow_structures.get(selected_flow_name)
 
         # --- Controllers ---
         controllers_root = tree.root.add("▶️ [b]Controllers[/b]")
-        
-        routes, actual_methods = self._get_flow_structure(flow_file_path)
-        standard_verbs = ["get", "post", "put", "delete"]
 
-        if not routes:
-            controllers_root.add("⚠️ [gray]No routes defined in docstring.[/]")
-        
-        for route in routes:
-            route_node = controllers_root.add(f"▶️ [green]{route}[/green]")
-            for verb in standard_verbs:
-                expected_method = f"{route.lower()}_{verb}"
-                is_implemented = expected_method in actual_methods or (verb == "get" and route.lower() in actual_methods)
-                label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
-                verb_node = route_node.add(label)
-                verb_node.data = {
-                    "flow_name": flow_name, "route_name": route, "verb": verb,
-                    "is_implemented": is_implemented, "file_path": flow_file_path
-                }
+        # If flow_data is None, it means the flow was not found or parsed correctly.
+        if not flow_data:
+            controllers_root.add("⚠️ [gray]Flow not found or parsed correctly. Ensure it inherits from BaseFlow and has a 'Routes:' entry in its docstring.[/]")
+        else:
+            routes = flow_data.get("routes", [])
+            actual_methods = flow_data.get("methods", set())
+            standard_verbs = ["get", "post", "put", "delete"]
+
+            if not routes:
+                controllers_root.add("⚠️ [gray]No routes defined in docstring for this flow.[/]")
+            
+            # Iterate through routes defined in the flow's docstring
+            for route in routes:
+                route_node = controllers_root.add(f"▶️ [green]{route}[/green]")
+                # For each route, list all standard verbs
+                for verb in standard_verbs:
+                    # Check if the verb (lowercase) is defined as a method in the current flow class
+                    is_implemented = verb.lower() in actual_methods
+                    label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
+                    verb_node = route_node.add(label)
+                    verb_node.data = {
+                        "flow_name": flow_name_full, # Full flow name (e.g., fleet.vehicles.index)
+                        "route_name": route,       # The route from docstring (e.g., LIST_VEHICLES)
+                        "verb": verb,              # The verb (e.g., get)
+                        "is_implemented": is_implemented,
+                        "file_path": flow_file_path
+                    }
 
         # --- Views (Hardcoded for now) ---
         views_root = tree.root.add("🖼️ [b]Associated Views[/b]")

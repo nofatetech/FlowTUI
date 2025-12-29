@@ -1,25 +1,44 @@
 from flow_system import BaseFlow
 from backend.models.fleet.vehicle import Vehicle
+from backend.contracts.fleet import (
+    VehicleSearchInput,
+    VehicleListResult
+)
 
-class index(BaseFlow):
-    """Returns a list of all vehicles."""
-    def get(self) -> list[Vehicle]:
-        # In a real app, this would fetch from a database or service
-        return []
+class Vehicles:
+    """
+    Manages the vehicles in the fleet.
+    Routes: GET_VEHICLES, STATUS_SYNCH
+    """
 
-class get(BaseFlow):
-    """Returns the state of a single vehicle."""
-    def get(self, vehicle_id: str) -> Vehicle:
-        pass
+    # FLOW: index
+    class index(BaseFlow):
+        consumes = VehicleSearchInput
+        produces = VehicleListResult
+        template = "fragments/vehicles/list.html"
 
-class command(BaseFlow):
-    """Sends a command to a vehicle (e.g., move, start_mission)."""
-    def post(self, vehicle_id: str, command: dict):
-        # Logic to send a command to the vehicle
-        pass
+        # GET default verb controller 
+        def get(self, input: VehicleSearchInput) -> VehicleListResult:
+            # Placeholder logic: In a real app, this would query a database or service
+            # For now, return a dummy list of vehicles.
+            return VehicleListResult(vehicles=[
+                Vehicle(id="rover-01", status="idle", battery_percent=85.5, location=(10.0, 20.0)),
+                Vehicle(id="drone-05", status="running_mission", battery_percent=30.2, location=(30.5, 15.0)),
+            ])
 
-class status(BaseFlow):
-    """Receives status updates from a vehicle."""
-    def post(self, vehicle_id: str, status: dict):
-        # Logic to handle incoming status
-        pass
+    # FLOW: status_synch
+    class status_synch(BaseFlow):
+        """
+        Handles status synchronization for vehicles.
+        Routes: SYNC_STATUS
+        """
+        consumes = VehicleSearchInput # Assuming input might be needed to select vehicles
+        produces = VehicleListResult # Assuming it returns updated vehicle status
+        template = "fragments/vehicles/status_update.html"
+
+        # GET verb controller
+        def get(self, input: VehicleSearchInput) -> VehicleListResult:
+            # Placeholder logic for status synchronization.
+            # In a real app, this would update vehicle statuses based on some criteria.
+            # For now, just return an empty list.
+            return VehicleListResult(vehicles=[])
