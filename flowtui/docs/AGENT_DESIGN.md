@@ -1,13 +1,15 @@
-# FlowTUI Agent: Design & Mental Model
+# The Oracle (●): Design & Mental Model
 
-This document outlines the design principles for the integrated AI Agent within FlowTUI. The agent is not a generic chatbot; it is a specialized partner designed to understand and accelerate development within the Flow architecture.
+This document outlines the design principles for **The Oracle (●)**—the integrated AI agent within FlowTUI. The Oracle is not a generic chatbot; it is a specialized, all-knowing intelligence designed to understand, accelerate, and safeguard development within the highly opinionated Flow architecture.
 
-## 1. Core Philosophy: The Agent as an Architect
+Its name, **O.R.A.C.L.E.**, stands for: **O**pinionated **R**easoning & **A**rchitecture **C**ontrol **L**ogic **E**ngine. This reflects its persona as the definitive source of truth and architectural wisdom for your Flow projects.
 
-The agent's primary directive is to **work with structure, not text.** It does not "edit files"; it "manipulates the application model." This core distinction is what makes it powerful and reliable.
+## 1. Core Philosophy: The Oracle as the Architect
 
--   **Old Paradigm (Rejected):** "Agent, please add a new method to the `Products` class in the `products.py` file."
--   **New Paradigm (Adopted):** "Agent, add a `POST` verb to the `products.index` flow."
+The Oracle's primary directive is to **work with structure, not text.** It does not "edit files"; it "manipulates the application model." This core distinction is what makes it powerful and reliable.
+
+-   **Old Paradigm (Rejected):** "Oracle, please add a new method to the `Products` class in the `products.py` file."
+-   **New Paradigm (Adopted):** "Oracle, add a `POST` verb to the `products.index` flow."
 
 This approach frees the developer from thinking about boilerplate and allows them to focus on the application's architecture and business logic.
 
