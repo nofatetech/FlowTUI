@@ -93,8 +93,6 @@ class FlowImplementationContent(Vertical):
         except Exception:
             parent_node.add("⚠️ [red]Parse Error[/]")
     
-    # --- New Dynamic Tree Logic ---
-
     def _get_flow_structure(self, file_path: str) -> dict[str, dict[str, list[str] | set[str]]]:
         """
         Parses a flow file to find BaseFlow subclasses (flows), their routes from
@@ -113,51 +111,58 @@ class FlowImplementationContent(Vertical):
             with open(file_path, 'r') as f:
                 content = f.read()
 
-            # Regex to find inner classes inheriting from BaseFlow.
-            # It captures: 
-            # Group 1: flow_name (the name of the inner class)
-            # Group 3/4: docstring content (optional)
-            # Group 5: class body
-            # The lookahead `(?=\n\s*class\s+\w+|\Z)` ensures it stops before the next class definition or at the end of the file.
-            flow_class_pattern = re.compile(
-                r"class\s+(\w+)\s*\(\s*BaseFlow\s*\)\s*:\s*(?:(?:\"\"\"(.*?)\"\"\")|(?:\'\'\'(.*?)\'\'\'))?([\s\S]*?)(?=\n\s*class\s+\w+|\Z)",
-                re.MULTILINE
+            # Regex to find all class definitions and their bodies.
+            # This captures:
+            # Group 1: class_name
+            # Group 2: base_classes_str (e.g., "BaseFlow" or "Other, BaseFlow")
+            # Group 3: class_body
+            # It looks for class definitions and captures their content until the next class definition or end of file.
+            class_pattern = re.compile(
+                r"^class\s+(\w+)\s*\(([\[\]\s\S]*?)\)\s*:\s*([\s\S]*?)(?=\n\s*class\s+\w+\s*\(|\Z)",
+                re.MULTILINE | re.DOTALL
             )
-            
-            for match in flow_class_pattern.finditer(content):
-                flow_name = match.group(1)
-                # Extract docstring content, handling both triple double-quotes and triple single-quotes
-                docstring = match.group(2) or match.group(3) or "" 
-                class_body = match.group(4)
 
-                current_flow_routes = []
-                if docstring:
-                    # Search for 'Routes:' within the extracted docstring
-                    routes_match = re.search(r'Routes:\s*([A-Z0-9_, ]+)', docstring, re.IGNORECASE)
-                    if routes_match:
-                        routes_str = routes_match.group(1)
-                        current_flow_routes = [route.strip() for route in routes_str.split(',')]
+            for match in class_pattern.finditer(content):
+                class_name = match.group(1)
+                base_classes_str = match.group(2)
+                class_body = match.group(3)
 
-                current_flow_methods = set()
-                if class_body:
-                    # Find all public methods defined directly within this flow class's body
-                    # We look for 'def ' followed by a method name and an opening parenthesis.
-                    found_methods = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', class_body, re.MULTILINE)
-                    # Convert method names to lowercase and exclude private methods (starting with '_')
-                    current_flow_methods = {m.lower() for m in found_methods if not m.startswith('_')}
-                
-                # Only add to flow_data if routes or methods were found, indicating a valid flow definition
-                if current_flow_routes or current_flow_methods:
-                    flow_data[flow_name] = {
-                        "routes": current_flow_routes,
-                        "methods": current_flow_methods
-                    }
+                # Check if this class inherits from BaseFlow
+                # Simple check for presence of 'BaseFlow' in the inheritance string.
+                # This should handle cases like `class Flow(BaseFlow):` or `class Flow(Other, BaseFlow):`.
+                if base_classes_str and 'BaseFlow' in base_classes_str:
+                    # Now parse docstring and methods for this specific flow class
+                    current_flow_routes = []
+                    current_flow_methods = set()
+                    if class_body:
+                        # Extract docstring
+                        docstring_match = re.search(r'"""(.*?)"""|\'\'\'(.*?)\'\'\'', class_body, re.DOTALL)
+                        docstring = docstring_match.group(1) or docstring_match.group(2) or "" 
+
+                        if docstring:
+                            # Search for 'Routes:' within the extracted docstring
+                            routes_match = re.search(r'Routes:\s*([A-Z0-9_, ]+)', docstring, re.IGNORECASE)
+                            if routes_match:
+                                routes_str = routes_match.group(1)
+                                current_flow_routes = [route.strip() for route in routes_str.split(',')]
+
+                        # Extract methods
+                        found_methods = re.findall(r'^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', class_body, re.MULTILINE)
+                        current_flow_methods = {m.lower() for m in found_methods if not m.startswith('_')}
+                    
+                    # Only add to flow_data if routes or methods were found, indicating a valid flow definition
+                    if current_flow_routes or current_flow_methods:
+                        flow_data[class_name] = {
+                            "routes": current_flow_routes,
+                            "methods": current_flow_methods
+                        }
 
         except Exception as e:
             # Log any parsing errors for debugging purposes.
             print(f"Error parsing flow file {file_path}: {e}")
             pass # Continue processing other files if an error occurs
         return flow_data
+
 
     def _update_tree_for_flow(self, selected_flow_full_path: str, flow_file_path: str) -> None:
         """Clear and rebuild the tree to show the implementation of backend Flows in a file."""
