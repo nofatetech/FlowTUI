@@ -21,17 +21,12 @@ class ExplorerContent(Vertical):
             self.file_path = file_path
             self.target_type = target_type
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.app_graph = self._load_app_graph()
-
-    def _load_app_graph(self) -> dict:
-        """Loads and parses the app_graph.json file."""
-        try:
-            with open("app_graph.json", "r") as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return {}
+    def refresh_tree(self, app_graph: dict) -> None:
+        """Receives a new app graph and rebuilds the tree."""
+        self.app_graph = app_graph
+        tree = self.query_one(Tree)
+        tree.clear()
+        self._populate_unified_tree(tree.root)
 
     def _populate_unified_tree(self, root: TreeNode) -> None:
         """Populates the entire tree with a unified project structure."""

@@ -1,7 +1,8 @@
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Header, Footer
+from textual.widgets import Header, Footer, Button
 
+from services.code_scanner import CodeScannerService
 from tui_panels.panel import Panel
 from tui_panels.deploy_info import DeployInfo
 from tui_panels.explorer_content import ExplorerContent
@@ -127,6 +128,24 @@ class FlowTUI(App):
         background: #2a2a2a;
     }
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.code_scanner = CodeScannerService()
+
+    def on_mount(self) -> None:
+        """Perform initial project scan when the app starts."""
+        self.scan_and_refresh_explorer()
+
+    def scan_and_refresh_explorer(self) -> None:
+        """Scans the project and tells the explorer to refresh."""
+        app_graph = self.code_scanner.build_app_graph(".") # Scan current directory
+        explorer = self.query_one(ExplorerContent)
+        explorer.refresh_tree(app_graph)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button presses."""
+        if event.button.id == "scan_project_button":
+            self.scan_and_refresh_explorer()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -176,6 +195,7 @@ class FlowTUI(App):
         """When a method is selected in the implementation panel, update the inspector."""
         inspector = self.query_one(InspectorContent)
         inspector.on_flow_implementation_content_method_selected(message)
+
 
 
 if __name__ == "__main__":
