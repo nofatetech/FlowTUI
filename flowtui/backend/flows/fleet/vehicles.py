@@ -13,8 +13,6 @@ class Vehicles:
     # FLOW: index
     class index(BaseFlow):
         """
-        Manages the list of vehicles.
-        Routes: LIST_VEHICLES
         """
         consumes = VehicleSearchInput
         produces = VehicleListResult
@@ -32,15 +30,13 @@ class Vehicles:
     # FLOW: status_synch
     class status_synch(BaseFlow):
         """
-        Handles status synchronization for vehicles.
-        Routes: SYNC_STATUS
         """
         consumes = VehicleSearchInput # Assuming input might be needed to select vehicles
         produces = VehicleListResult # Assuming it returns updated vehicle status
         template = "fragments/vehicles/status_update.html"
 
-        # GET verb controller
-        def get(self, input: VehicleSearchInput) -> VehicleListResult:
+        # POST verb controller
+        def post(self, input: VehicleSearchInput) -> VehicleListResult:
             # Placeholder logic for status synchronization.
             # In a real app, this would update vehicle statuses based on some criteria.
             # For now, just return an empty list.
