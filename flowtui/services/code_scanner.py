@@ -19,47 +19,51 @@ class CodeScannerService:
         query = language.query(query_string)
         return query.captures(node)
 
-    def scan_python_for_flows(self, file_path: str, content: str) -> list[dict]:
+    def scan_python_for_flows(self, file_path: str, content: str, flows_base_path: str) -> list[dict]:
         """Scans a Python file for Flow classes and their public methods (verbs)."""
         tree = self.parser_py.parse(bytes(content, "utf8"))
         root_node = tree.root_node
         
-        # This query finds class definitions that inherit from something (e.g., BaseFlow)
-        # and the names of all public methods within them.
         query = """
         (class_definition
-          name: (identifier) @class.name
-          superclasses: (argument_list . (identifier) @class.superclass)
-          body: (block .
-            (function_definition
-              name: (identifier) @method.name
-            )
-          )
-        )
+            superclasses: (argument_list (identifier) @class.superclass)
+        ) @flow.class
         """
         captures = self._execute_query(self.lang_py, root_node, query)
         
-        flows = {}
-        for node, capture_name in captures:
-            if capture_name == "class.name":
-                class_name = node.text.decode('utf8')
-                if class_name not in flows:
-                    flows[class_name] = {"verbs": []}
-            elif capture_name == "method.name":
-                method_name = node.text.decode('utf8')
-                if not method_name.startswith("_"): # Exclude private/magic methods
-                    flows[class_name]["verbs"].append(method_name)
-        
-        # We're making an assumption here about domain naming convention
-        # In a real system, this would be more robust.
         results = []
-        for name, data in flows.items():
-            domain_name_base = os.path.basename(file_path).replace(".py", "")
-            results.append({
-                "domain": f"{domain_name_base}.{name.lower()}",
-                "file": file_path,
-                "verbs": data["verbs"]
-            })
+        
+        # Calculate the domain from the file's relative path
+        relative_path = os.path.relpath(file_path, flows_base_path)
+        domain_name_base = relative_path.replace(".py", "").replace(os.sep, ".")
+
+        for node, capture_name in captures:
+            if capture_name == "class.superclass" and node.text.decode('utf8') == "BaseFlow":
+                class_node = node.parent.parent
+                class_name_node = class_node.child_by_field_name("name")
+                
+                if not class_name_node:
+                    continue
+                
+                class_name = class_name_node.text.decode('utf8')
+                verbs = []
+
+                body_node = class_node.child_by_field_name("body")
+                if body_node:
+                    method_query = "(function_definition name: (identifier) @method.name)"
+                    method_captures = self._execute_query(self.lang_py, body_node, method_query)
+                    for method_node, _ in method_captures:
+                        method_name = method_node.text.decode('utf8')
+                        if not method_name.startswith("_"):
+                            verbs.append(method_name)
+                
+                flow_name = class_name.split('_')[-1] if '_' in class_name else class_name
+                results.append({
+                    "domain": f"{domain_name_base}.{flow_name.lower()}",
+                    "file": file_path,
+                    "verbs": verbs
+                })
+        return results
         return results
 
     def scan_python_for_models(self, file_path: str, content: str) -> list[dict]:
@@ -130,7 +134,7 @@ class CodeScannerService:
                     path = os.path.join(subdir, file)
                     with open(path, "r") as f:
                         content = f.read()
-                    graph["backend"]["flows"].extend(self.scan_python_for_flows(path, content))
+                    graph["backend"]["flows"].extend(self.scan_python_for_flows(path, content, backend_flows_path))
 
         # Scan backend models
         for subdir, _, files in os.walk(backend_models_path):

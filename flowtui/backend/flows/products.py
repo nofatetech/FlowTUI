@@ -23,18 +23,19 @@ class Products:
     """
     # TODO: fix
 
-    # GET default verb controller 
+    # FLOW: index
     class index(BaseFlow):
         consumes = ProductSearchInput
         produces = ProductListResult
         template = "fragments/product_list.html"
 
+        # GET default verb controller 
         def get(self, input: ProductSearchInput) -> ProductListResult:
             products = ProductService.search(input.query)
             return ProductListResult(products=products)
 
-    # POST verb controller
-    class POST_htmx_blocks(BaseFlow):
+    # FLOW: htmx_blocks
+    class htmx_blocks(BaseFlow):
         """
         Returns html blocks depending on what the frontend needs. 
         """
@@ -43,8 +44,10 @@ class Products:
         produces = ProductListResult
         template = "fragments/product_list.html"
 
+        # GET verb controller
         def get(self, input: ProductSearchInput) -> ProductListResult:
-            products = ProductService.search(input.query)
-            return ProductListResult(products=products)
+            # products = ProductService.search(input.query)
+            # return ProductListResult(products=products)
+            pass
 
 

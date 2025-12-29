@@ -125,7 +125,3 @@ class ExplorerContent(Vertical):
     def compose(self) -> ComposeResult:
         """Render the explorer with a single, unified tree."""
         yield Tree("🌐 [b]Project[/b]")
-
-    def on_mount(self) -> None:
-        """Populate the unified tree once the DOM is ready."""
-        self._populate_unified_tree(self.query_one(Tree).root)
