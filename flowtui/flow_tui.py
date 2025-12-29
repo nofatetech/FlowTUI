@@ -67,47 +67,59 @@ class FlowTUI(App):
 
     /* --- Oracle Panel Styling --- */
     #oracle-container {
-        padding: 0 1;
+        padding: 0;
+        layout: vertical;
     }
     #oracle-log {
-        height: 1fr;
-        border-bottom: wide #4A0404;
-        padding-bottom: 1;
+        height: 3fr; /* Takes up most of the space */
+        padding: 0 1;
     }
     .user-prompt {
         text-align: right;
         color: #cccccc;
-        margin: 1 0 0 4; /* Push it to the right */
+        margin: 1 0 0 4;
         background: #2a2a2a;
         padding: 0 1;
         border: round #444444;
     }
+    .user-prompt-action {
+        text-align: right;
+        color: #F5A623; /* Action color */
+        margin: 1 0 0 4;
+        background: #2a2a2a;
+        padding: 0 1;
+        border: round #F5A623;
+        width: auto;
+    }
     .oracle-response {
         color: #E0E0E0;
-        margin: 1 4 0 0; /* Push it to the left */
+        margin: 1 4 0 0;
         background: #1e1e1e;
         padding: 1;
         border: round #FF0000;
         width: 100%;
+        overflow: auto;
     }
-    .oracle-context-log {
-        color: gray;
-        text-align: center;
-        width: 100%;
+    #oracle-chat-list-container {
+        height: 1fr; /* Takes up less space */
+        border-top: wide #4A0404;
+        padding: 1;
     }
-    .action-buttons {
-        margin: 1 4 0 0;
-        height: 1;
+    #oracle-chat-list-container ListView {
+        background: #1e1e1e;
+    }
+    #oracle-chat-list-container #active-chat {
+        background: #4A0404;
+    }
+    #new-chat-btn {
         width: 100%;
+        margin-top: 1;
     }
     #oracle-input-bar {
         height: auto;
-        padding-top: 1;
+        padding: 1;
         align: right middle;
-    }
-    #oracle-context-label {
-        color: gray;
-        margin-right: 1;
+        border-top: wide #4A0404;
     }
     #oracle-input {
         width: 1fr;

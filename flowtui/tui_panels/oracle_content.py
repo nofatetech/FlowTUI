@@ -1,11 +1,10 @@
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll, Horizontal
-from textual.widgets import Static, Button, Input, Label
+from textual.widgets import Static, Button, Input, Label, ListView, ListItem
 
 class OracleContent(Static):
     """
-    A mock UI for The Oracle panel.
-    This demonstrates the chat view with sample conversation and action buttons.
+    A mock UI for The Oracle panel, demonstrating a command-driven workflow.
     """
 
     def compose(self) -> ComposeResult:
@@ -14,37 +13,43 @@ class OracleContent(Static):
             # The main chat log area
             with VerticalScroll(id="oracle-log"):
                 yield Static(
-                    "[b i]Context: products.list.get[/b i]", classes="oracle-context-log"
-                )
-                yield Static(
                     "Create a new flow to handle product reviews.", classes="user-prompt"
                 )
                 yield Static(
                     """
-[b]ORACLE:[/]
-Certainly. I will scaffold a new domain file, `reviews.py`.
+[b]ORACLE:[/] I will execute the following command:
+[b cyan]/create domain reviews flow:index verb:get verb:post[/b cyan]
 
-It will contain a default `Index` flow with `get` and `post` verbs. The `post` verb will be configured to accept `product_id` and `review_text` from the client.
+This will create `reviews/index.py` with an `IndexFlow` class.
+Do you want to proceed?
 
-The corresponding view template will be created at `views/reviews/index.html`.
+  1. [Execute]
+  2. [Cancel]
 """,
                     classes="oracle-response",
                 )
-                yield Horizontal(
-                    Button("[Create Domain & Flow]", variant="success"),
-                    Button("[Show me the code]", variant="default"),
-                    classes="action-buttons",
-                )
-                yield Static("Now generate the HTML form for this.", classes="user-prompt")
+                yield Static("1", classes="user-prompt-action")
                 yield Static(
                     """
-[b]ORACLE:[/]
-Here is the standard HTML form. It will be wired to the `reviews.index.post` verb and will target the `#review-list` element for updates.
-                    """,
+[b]ORACLE:[/] Command executed.
+Now, what is the next command?
+""",
                     classes="oracle-response",
                 )
 
+            # The list of chats
+            with Vertical(id="oracle-chat-list-container"):
+                yield Label("[b]Chat History[/b]")
+                with VerticalScroll():
+                    yield ListView(
+                        ListItem(Label("Chat 1: Product Reviews"), id="active-chat"),
+                        ListItem(Label("Chat 2: User Auth")),
+                        ListItem(Label("Chat 3: Refactoring DB")),
+                    )
+                yield Button("[+] New Chat", variant="default", id="new-chat-btn")
+
             # The input area at the bottom
             with Horizontal(id="oracle-input-bar"):
-                yield Label("Context: [b]products.list[/b]", id="oracle-context-label")
-                yield Input(placeholder="Ask The Oracle...", id="oracle-input")
+                yield Input(
+                    placeholder="Ask a question or type a /command...", id="oracle-input"
+                )
