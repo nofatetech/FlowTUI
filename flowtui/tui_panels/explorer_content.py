@@ -1,3 +1,4 @@
+import os
 import json
 from textual.app import ComposeResult
 from textual.containers import Vertical
@@ -56,20 +57,48 @@ class ExplorerContent(Vertical):
         return "cyan" if target_type == "web" else "magenta"
 
     def _populate_for_backend(self, backend_root: TreeNode) -> None:
-        """Populates the tree with backend flows and shared models."""
-        # Add Flows
-        flows_node = backend_root.add("▶️ [b]Flows[/b]")
-        for flow in self.app_graph.get("backend", {}).get("flows", []):
-            domain_node = flows_node.add(f"▶️ [green]{flow['domain']}[/green]")
-            domain_node.data = {"file_path": flow['file'], "name": flow['domain'], "type": "flow"}
-            for verb in flow.get("verbs", []):
-                domain_node.add(f"↳ [dim]{verb.upper()}[/dim]")
+        """Populates the tree with backend domains (flows) and shared models, with namespacing."""
 
-        # Add Shared Models
-        models_node = backend_root.add("📄 [b]Models[/b]")
-        for model in self.app_graph.get("shared_models", {}).get("models", []):
-            model_node = models_node.add(f"🔹 [yellow]{model['name']}[/yellow]")
-            model_node.data = {"file_path": model['file'], "name": model['name'], "type": "model"}
+        # --- Domains (Flows) ---
+        domains_root = backend_root.add("▶️ [b]Domains[/b]")
+        domain_groups = {}
+        for flow in self.app_graph.get("backend", {}).get("flows", []):
+            domain_name = flow['domain'].split('.')[0]
+            domain_groups.setdefault(domain_name, []).append(flow)
+
+        for domain_name, flows in sorted(domain_groups.items()):
+            current_domain_node = domains_root.add(f"📦 [green][b]{domain_name}[/b][/green]")
+            for flow in sorted(flows, key=lambda f: f['domain']):
+                domain_parts = flow['domain'].split('.')
+                flow_name = ".".join(domain_parts[1:]) if len(domain_parts) > 1 else flow['file'].split('/')[-1].replace(".py", "")
+                
+                flow_node = current_domain_node.add(f"▶️ [cyan]{flow_name}[/cyan]")
+                flow_node.data = {"file_path": flow['file'], "name": flow['domain'], "type": "flow"}
+
+        # --- Shared Models ---
+        models_root = backend_root.add("📄 [b]Models[/b]")
+        shared_models = self.app_graph.get("shared_models", {}).get("models", [])
+        
+        namespaced_models = {}
+        for model in shared_models:
+            relative_path = os.path.relpath(model['file'], self.app_graph['shared_models']['path'])
+            parts = relative_path.replace(".py", "").split(os.sep)
+            
+            current_level = namespaced_models
+            for part in parts[:-1]:
+                current_level = current_level.setdefault(part, {})
+            current_level[parts[-1]] = model
+
+        def add_namespaced_nodes(parent_node: TreeNode, data: dict):
+            for name, content in sorted(data.items()):
+                if "file" in content: # It's a model
+                    model_node = parent_node.add(f"🔹 [yellow]{content['name']}[/yellow]")
+                    model_node.data = {"file_path": content['file'], "name": content['name'], "type": "model"}
+                else: # It's a directory/namespace
+                    dir_node = parent_node.add(f"📁 [blue]{name}[/blue]")
+                    add_namespaced_nodes(dir_node, content)
+        
+        add_namespaced_nodes(models_root, namespaced_models)
 
     def _populate_for_frontend(self, target_root: TreeNode, target_data: dict) -> None:
         """Populates a node with a specific frontend target's views and assets."""
