@@ -56,19 +56,35 @@ class ExplorerContent(Vertical):
 
         # --- Domains (Flows) ---
         domains_root = backend_root.add("▶️ [b]Domains[/b]")
-        domain_groups = {}
+        
+        # Use a nested dictionary to build the domain hierarchy
+        domain_tree_data = {}
         for flow in self.app_graph.get("backend", {}).get("flows", []):
-            domain_name = flow['domain'].split('.')[0]
-            domain_groups.setdefault(domain_name, []).append(flow)
+            # flow['domain'] will be something like "products.index" or "fleet.vehicles.index"
+            domain_parts = flow['domain'].split('.') # e.g., ['products', 'index'] or ['fleet', 'vehicles', 'index']
+            
+            current_level = domain_tree_data
+            for i, part in enumerate(domain_parts):
+                if i == len(domain_parts) - 1: # This is the actual flow name
+                    # Store the original flow data here, including file_path and full domain name
+                    current_level.setdefault(part, {"_is_flow": True, **flow})
+                else:
+                    current_level = current_level.setdefault(part, {})
 
-        for domain_name, flows in sorted(domain_groups.items()):
-            current_domain_node = domains_root.add(f"📦 [green][b]{domain_name}[/b][/green]")
-            for flow in sorted(flows, key=lambda f: f['domain']):
-                domain_parts = flow['domain'].split('.')
-                flow_name = ".".join(domain_parts[1:]) if len(domain_parts) > 1 else flow['file'].split('/')[-1].replace(".py", "")
-                
-                flow_node = current_domain_node.add(f"▶️ [cyan]{flow_name}[/cyan]")
-                flow_node.data = {"file_path": flow['file'], "name": flow['domain'], "type": "flow"}
+        def add_domain_nodes(parent_node: TreeNode, data: dict, path_segment_icon: str = "📦"):
+            for name, content in sorted(data.items()):
+                if content.get("_is_flow"): # This is a flow
+                    flow_node = parent_node.add(f"▶️ [cyan]{name}[/cyan]")
+                    flow_node.data = {
+                        "file_path": content['file'],
+                        "name": content['domain'], # This is the full domain.flow name
+                        "type": "flow"
+                    }
+                else: # This is a domain segment
+                    domain_node = parent_node.add(f"{path_segment_icon} [green][b]{name}[/b][/green]")
+                    add_domain_nodes(domain_node, content)
+        
+        add_domain_nodes(domains_root, domain_tree_data)
 
         # --- Shared Models ---
         models_root = backend_root.add("📄 [b]Models[/b]")
