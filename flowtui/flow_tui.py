@@ -142,10 +142,11 @@ class FlowTUI(App):
         explorer = self.query_one(ExplorerContent)
         explorer.refresh_tree(app_graph)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button presses."""
-        if event.button.id == "scan_project_button":
-            self.scan_and_refresh_explorer()
+    def on_explorer_content_scan_project_requested(
+        self, message: ExplorerContent.ScanProjectRequested
+    ) -> None:
+        """Handle the request to rescan the project."""
+        self.scan_and_refresh_explorer()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)

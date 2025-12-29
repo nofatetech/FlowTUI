@@ -21,6 +21,10 @@ class ExplorerContent(Vertical):
             self.file_path = file_path
             self.target_type = target_type
 
+    class ScanProjectRequested(Message):
+        """Posted when the user clicks the rescan button."""
+        pass
+
     def refresh_tree(self, app_graph: dict) -> None:
         """Receives a new app graph and rebuilds the tree."""
         self.app_graph = app_graph
@@ -30,8 +34,13 @@ class ExplorerContent(Vertical):
 
     def _populate_unified_tree(self, root: TreeNode) -> None:
         """Populates the entire tree with a unified project structure."""
+        
+        # Add a static button for rescanning
+        scan_node = root.add("🔄 [bold cyan]Rescan Project[/]")
+        scan_node.data = {"action": "scan"}
+        
         if not self.app_graph:
-            root.add("⚠️ [red]app_graph.json not found or invalid.[/]")
+            root.add("⚠️ [red]Scan data not available.[/]")
             return
 
         # --- Backend Node ---
@@ -129,8 +138,17 @@ class ExplorerContent(Vertical):
                 renderers_node.add(f"🖌️ [yellow]{renderer['file'].split('/')[-1]}[/yellow]")
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        """When a selectable node is clicked, post a message."""
-        if event.node.data and "file_path" in event.node.data:
+        """Post a message when a node is selected."""
+        if not event.node.data:
+            return
+
+        # Check if the rescan button was clicked
+        if event.node.data.get("action") == "scan":
+            self.post_message(self.ScanProjectRequested())
+            return
+
+        # Otherwise, handle as a file selection
+        if "file_path" in event.node.data:
             node_data = event.node.data
             self.post_message(self.FlowSelected(
                 name=node_data["name"],
