@@ -8,16 +8,19 @@ from backend.contracts.fleet import (
 class Vehicles:
     """
     Manages the vehicles in the fleet.
-    Routes: GET_VEHICLES, STATUS_SYNCH
     """
 
     # FLOW: index
     class index(BaseFlow):
+        """
+        Manages the list of vehicles.
+        Routes: LIST_VEHICLES
+        """
         consumes = VehicleSearchInput
         produces = VehicleListResult
         template = "fragments/vehicles/list.html"
 
-        # GET default verb controller 
+        # GET default verb controller
         def get(self, input: VehicleSearchInput) -> VehicleListResult:
             # Placeholder logic: In a real app, this would query a database or service
             # For now, return a dummy list of vehicles.

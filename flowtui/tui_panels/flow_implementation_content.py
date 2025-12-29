@@ -159,62 +159,78 @@ class FlowImplementationContent(Vertical):
             pass # Continue processing other files if an error occurs
         return flow_data
 
-    def _update_tree_for_flow(self, flow_name_full: str, flow_file_path: str) -> None:
-        """Clear and rebuild the tree to show the implementation of a backend Flow."""
-        tree = self.query_one(Tree)
-        tree.clear()
-        tree.root.label = f"📁 {flow_name_full}" # e.g., fleet.vehicles.index
-
-        # Get the structure for all flows defined in this file
-        flow_structures = self._get_flow_structure(flow_file_path)
-        
-        # Extract the specific flow name (e.g., "index" from "fleet.vehicles.index")
-        selected_flow_name = flow_name_full.split('.')[-1] 
-        
-        # Get the data for the selected flow
-        flow_data = flow_structures.get(selected_flow_name)
-
-        # --- Controllers ---
-        controllers_root = tree.root.add("▶️ [b]Controllers[/b]")
-
-        # If flow_data is None, it means the flow was not found or parsed correctly.
-        if not flow_data:
-            controllers_root.add("⚠️ [gray]Flow not found or parsed correctly. Ensure it inherits from BaseFlow and has a 'Routes:' entry in its docstring.[/]")
-        else:
-            routes = flow_data.get("routes", [])
-            actual_methods = flow_data.get("methods", set())
-            standard_verbs = ["get", "post", "put", "delete"]
-
-            if not routes:
-                controllers_root.add("⚠️ [gray]No routes defined in docstring for this flow.[/]")
+        def _update_tree_for_flow(self, selected_flow_full_path: str, flow_file_path: str) -> None:
+            """Clear and rebuild the tree to show the implementation of backend Flows in a file."""
+            tree = self.query_one(Tree)
+            tree.clear()
+            # Use the file path for the root label, as it contains multiple flows
+            tree.root.label = f"📁 {flow_file_path}"
+    
+            flow_structures = self._get_flow_structure(flow_file_path)
             
-            # Iterate through routes defined in the flow's docstring
-            for route in routes:
-                route_node = controllers_root.add(f"▶️ [green]{route}[/green]")
-                # For each route, list all standard verbs
-                for verb in standard_verbs:
-                    # Check if the verb (lowercase) is defined as a method in the current flow class
-                    is_implemented = verb.lower() in actual_methods
-                    label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
-                    verb_node = route_node.add(label)
-                    verb_node.data = {
-                        "flow_name": flow_name_full, # Full flow name (e.g., fleet.vehicles.index)
-                        "route_name": route,       # The route from docstring (e.g., LIST_VEHICLES)
-                        "verb": verb,              # The verb (e.g., get)
-                        "is_implemented": is_implemented,
-                        "file_path": flow_file_path
-                    }
-
-        # --- Views (Hardcoded for now) ---
-        views_root = tree.root.add("🖼️ [b]Associated Views[/b]")
-        self._find_and_populate_views(views_root)
-        
-        # --- Contracts (Hardcoded for now) ---
-        contracts_root = tree.root.add("📜 [b]Associated Contracts[/b]")
-        self._find_and_populate_contracts(contracts_root)
-        
-        tree.root.expand_all()
-
+            if not flow_structures:
+                tree.root.add("⚠️ [gray]No flows found or parsed correctly in this file. Ensure flows inherit from BaseFlow and have a 'Routes:' entry in their docstring.[/]")
+                return
+    
+            # --- Controllers ---
+            controllers_root = tree.root.add("▶️ [b]Controllers[/b]")
+    
+            sorted_flow_names = sorted(flow_structures.keys())
+    
+            # Determine the module path prefix for the file.
+            # E.g., if selected_flow_full_path is "fleet.vehicles.index", the prefix is "fleet.vehicles".
+            # This prefix will be used to construct the full path for each flow found in the file.
+            module_path_prefix = '.'.join(selected_flow_full_path.split('.')[:-1])
+    
+            for flow_name in sorted_flow_names: # flow_name is e.g. 'index' or 'status_synch'
+                flow_data = flow_structures[flow_name]
+                
+                # Construct the full path for the current flow.
+                # If module_path_prefix is empty (e.g., for flows in the root of 'backend'),
+                # the full path is just the flow_name. Otherwise, it's prefix.flow_name.
+                if module_path_prefix:
+                    current_full_flow_path = f"{module_path_prefix}.{flow_name}"
+                else:
+                    current_full_flow_path = flow_name
+    
+                flow_node_label = f"▶️ [cyan]{flow_name}[/cyan]"
+                flow_node = controllers_root.add(flow_node_label)
+                flow_node.data = {"full_path": current_full_flow_path, "file_path": flow_file_path, "type": "flow"}
+    
+                routes = flow_data.get("routes", [])
+                actual_methods = flow_data.get("methods", set())
+                standard_verbs = ["get", "post", "put", "delete"]
+    
+                if not routes:
+                    flow_node.add("⚠️ [gray]No routes defined in docstring for this flow.[/]")
+                
+                # Iterate through routes defined in the flow's docstring
+                for route in routes:
+                    route_node = flow_node.add(f"▶️ [green]{route}[/green]")
+                    # For each route, list all standard verbs
+                    for verb in standard_verbs:
+                        # Check if the verb (lowercase) is defined as a method in the current flow class
+                        is_implemented = verb.lower() in actual_methods
+                        label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
+                        verb_node = route_node.add(label)
+                        verb_node.data = {
+                            "flow_name": current_full_flow_path, # This is the full path to the flow
+                            "route_name": route,
+                            "verb": verb,
+                            "is_implemented": is_implemented,
+                            "file_path": flow_file_path
+                        }
+    
+            # --- Views (Hardcoded for now) ---
+            views_root = tree.root.add("🖼️ [b]Associated Views[/b]")
+            self._find_and_populate_views(views_root)
+            
+            # --- Contracts (Hardcoded for now) ---
+            contracts_root = tree.root.add("📜 [b]Associated Contracts[/b]")
+            self._find_and_populate_contracts(contracts_root)
+            
+            tree.root.expand_all()
+    
     def _update_tree_for_view(self, view_name: str, view_file_path: str) -> None:
         """Clear and rebuild the tree to show the content of a View file."""
         tree = self.query_one(Tree)
