@@ -1,0 +1,89 @@
+{
+  "project_name": "FlowTUI_Example_Project",
+  "graph_version": "1.0",
+  "description": "This JSON represents the TUI's 'mental model' of the entire application, including one backend and multiple, distinct frontend targets.",
+  "backend": {
+    "type": "fastapi",
+    "path": "backend/",
+    "description": "The central source of truth for business logic and application state. Serves data to all frontend targets.",
+    "flows": [
+      {
+        "domain": "products",
+        "file": "backend/flows/products.py",
+        "verbs": ["get", "post"],
+        "description": "Manages the creation and retrieval of products."
+      },
+      {
+        "domain": "fleet.vehicles",
+        "file": "backend/flows/fleet/vehicles.py",
+        "verbs": ["get", "create"],
+        "description": "Handles the vehicle fleet, including creation and tracking."
+      }
+    ]
+  },
+  "shared_models": {
+    "path": "backend/models/",
+    "description": "Data contracts (schemas) used as the API between the backend and frontends.",
+    "models": [
+      {
+        "name": "Product",
+        "file": "backend/models/product.py",
+        "consumers": ["htmx_spa", "blender_project"]
+      },
+      {
+        "name": "Vehicle",
+        "file": "backend/models/fleet/vehicle.py",
+        "consumers": ["blender_project"]
+      }
+    ]
+  },
+  "frontend_targets": [
+    {
+      "id": "htmx_spa",
+      "type": "web",
+      "path": "frontends/htmx_spa/",
+      "entrypoint": "frontends/htmx_spa/main.py",
+      "description": "A modern, single-page web application experience powered by HTMX.",
+      "views": [
+        {
+          "file": "frontends/htmx_spa/views/home.html",
+          "flow_wirings": [
+            {
+              "element": "button",
+              "trigger": "flow:click",
+              "action": "products.index.get",
+              "target_element": "#product-list-container",
+              "description": "When clicked, this button fetches the product list from the backend and swaps it into the main container."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blender_project",
+      "type": "blender",
+      "path": "frontends/blender_project/",
+      "entrypoint": "frontends/blender_project/main.py",
+      "description": "An integration for Blender that uses the backend to manage and visualize 3D scene data.",
+      "views": [
+        {
+          "file": "frontends/blender_project/ui/scene_panel.py",
+          "flow_wirings": [
+            {
+              "element": "layout.operator",
+              "trigger": "property(flow_action)",
+              "action": "fleet.vehicles.create",
+              "description": "A UI button in a Blender panel that, when clicked, triggers an operator. The operator reads the 'flow_action' property and calls the backend to create a new vehicle, which is then rendered in the scene."
+            }
+          ]
+        }
+      ],
+      "renderers": [
+        {
+          "file": "frontends/blender_project/rendering/object_renderer.py",
+          "consumes_models": ["Product", "Vehicle"]
+        }
+      ]
+    }
+  ]
+}

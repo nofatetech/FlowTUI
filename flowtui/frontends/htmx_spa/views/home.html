@@ -1,0 +1,21 @@
+<!-- Main view for the home page -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+    <div id="product-list-container">
+        <!-- This content will be loaded and updated by a Flow -->
+        <button
+            flow:click="products.index.get"
+            flow:target="#product-list-container"
+            flow:swap="innerHTML"
+            class="button is-primary"
+        >
+            Load Products
+        </button>
+    </div>
+</body>
+</html>

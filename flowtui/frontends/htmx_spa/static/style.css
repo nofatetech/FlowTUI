@@ -1,0 +1,7 @@
+/* styles for the htmx spa */
+.button.is-primary {
+    background-color: #00d1b2;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}

@@ -124,10 +124,10 @@ class FlowImplementationContent(Vertical):
             pass
         return routes, methods
 
-    def update_tree(self, flow_name: str, flow_file_path: str) -> None:
-        """Clear and rebuild the tree based on the selected flow."""
-        self.query_one(Tree).clear()
+    def _update_tree_for_flow(self, flow_name: str, flow_file_path: str) -> None:
+        """Clear and rebuild the tree to show the implementation of a backend Flow."""
         tree = self.query_one(Tree)
+        tree.clear()
         tree.root.label = f"📁 {flow_name}"
 
         # --- Controllers ---
@@ -142,51 +142,79 @@ class FlowImplementationContent(Vertical):
         for route in routes:
             route_node = controllers_root.add(f"▶️ [green]{route}[/green]")
             for verb in standard_verbs:
-                # Opinionated naming convention: routeName_httpVerb
                 expected_method = f"{route.lower()}_{verb}"
-                
-                # Special case: a method name matching the route name is the GET
-                is_implemented = expected_method in actual_methods
-                if not is_implemented and verb == "get" and route.lower() in actual_methods:
-                    is_implemented = True
-
+                is_implemented = expected_method in actual_methods or (verb == "get" and route.lower() in actual_methods)
                 label = f"↳ [cyan]{verb.upper()}[/]" if is_implemented else f"↳ [gray]{verb.upper()}[/]"
                 verb_node = route_node.add(label)
                 verb_node.data = {
-                    "flow_name": flow_name,
-                    "route_name": route,
-                    "verb": verb,
-                    "is_implemented": is_implemented,
-                    "file_path": flow_file_path
+                    "flow_name": flow_name, "route_name": route, "verb": verb,
+                    "is_implemented": is_implemented, "file_path": flow_file_path
                 }
 
-        # --- Views ---
-        views_root = tree.root.add("🖼️ [b]Views[/b]")
-        WEB_APP_PATH = "app_templates/web_app_template"
-        views_dir = os.path.join(WEB_APP_PATH, "views")
+        # --- Views (Hardcoded for now) ---
+        views_root = tree.root.add("🖼️ [b]Associated Views[/b]")
+        self._find_and_populate_views(views_root)
         
-        if os.path.isdir(views_dir):
-            for file in sorted(os.listdir(views_dir)):
-                if file.endswith(".html") and not file.startswith("_"):
-                    view_node = views_root.add(f"📄 [blue]{file}[/blue]")
-                    self._populate_html_tree(view_node, os.path.join(views_dir, file))
+        # --- Contracts (Hardcoded for now) ---
+        contracts_root = tree.root.add("📜 [b]Associated Contracts[/b]")
+        self._find_and_populate_contracts(contracts_root)
         
         tree.root.expand_all()
 
-        # --- Contracts ---
-        contracts_root = tree.root.add("📜 [b]Contracts[/b]")
-        BACKEND_PATH = "backend"
+    def _update_tree_for_view(self, view_name: str, view_file_path: str) -> None:
+        """Clear and rebuild the tree to show the content of a View file."""
+        tree = self.query_one(Tree)
+        tree.clear()
+        tree.root.label = f"📄 {view_name.split('/')[-1]}"
+        self._populate_html_tree(tree.root, view_file_path)
+        tree.root.expand_all()
+
+    def _update_tree_for_model(self, model_name: str, model_file_path: str) -> None:
+        """Clear and rebuild the tree to show the content of a Model file."""
+        tree = self.query_one(Tree)
+        tree.clear()
+        tree.root.label = f"🔹 {model_name}"
+        try:
+            with open(model_file_path, 'r') as f:
+                content = f.read()
+            # Simple display for now, could be enhanced with syntax highlighting
+            tree.root.add(content)
+        except Exception:
+            tree.root.add("⚠️ [red]Could not read file.[/]")
+
+    def _find_and_populate_views(self, parent_node: TreeNode):
+        """Helper to find and populate associated views (currently hardcoded)."""
+        WEB_APP_PATH = "app_templates/web_app_template" # This should come from app_graph
+        views_dir = os.path.join(WEB_APP_PATH, "views")
+        if os.path.isdir(views_dir):
+            for file in sorted(os.listdir(views_dir)):
+                if file.endswith(".html") and not file.startswith("_"):
+                    view_node = parent_node.add(f"📄 [blue]{file}[/blue]")
+                    self._populate_html_tree(view_node, os.path.join(views_dir, file))
+
+    def _find_and_populate_contracts(self, parent_node: TreeNode):
+        """Helper to find and populate associated contracts (currently hardcoded)."""
+        BACKEND_PATH = "backend" # This should come from app_graph
         contracts_dir = os.path.join(BACKEND_PATH, "contracts")
         if os.path.isdir(contracts_dir):
             for file in sorted(os.listdir(contracts_dir)):
                 if file.endswith(".py") and not file.startswith("__"):
-                    contracts_root.add(f"📄 [yellow]{file}[/yellow]")
-        
-        tree.root.expand()
+                    parent_node.add(f"📄 [yellow]{file}[/yellow]")
 
     def on_explorer_content_flow_selected(self, message: ExplorerContent.FlowSelected) -> None:
-        """Listen for messages from the explorer and update this panel."""
-        self.update_tree(message.flow_name, message.file_path)
+        """Listen for messages from the explorer and update this panel based on target type."""
+        target_type = message.target_type
+        
+        if target_type == "flow":
+            self._update_tree_for_flow(message.name, message.file_path)
+        elif target_type == "view":
+            self._update_tree_for_view(message.name, message.file_path)
+        elif target_type == "model":
+            self._update_tree_for_model(message.name, message.file_path)
+        else:
+            # Default case: clear the tree if the type is unknown
+            self.query_one(Tree).clear()
+            self.query_one(Tree).root.label = "Unsupported selection"
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         """Post a message when a verb or an HTML element is selected."""
@@ -218,4 +246,4 @@ class FlowImplementationContent(Vertical):
 
     def compose(self) -> ComposeResult:
         """Compose the initial empty tree."""
-        yield Tree("⬅️ [i]Select a Flow from the Explorer[/i]")
+        yield Tree("⬅️ [i]Select a target from the Explorer[/i]")
