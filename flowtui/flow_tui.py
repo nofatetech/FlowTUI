@@ -30,21 +30,6 @@ class FlowTUI(App):
     .panel-body > Tree { border: none; padding: 0; }
     #col-1 > Panel > .panel-body { padding: 0; }
 
-    /* --- Explorer Target Selector --- */
-    #target_selector {
-        height: 3;
-        margin-bottom: 1;
-        layout: horizontal;
-        align: center middle;
-        background: #2a2a2a;
-        padding: 1;
-        border-bottom: wide #333333;
-    }
-    #target_selector RadioButton.-on {
-        background: #4A0404;
-    }
-
-
     /* --- Inspector Panel Styling --- */
     #col-3 .prop-row {
         height: auto;
