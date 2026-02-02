@@ -51,5 +51,5 @@ Now, what is the next command?
             # The input area at the bottom
             with Horizontal(id="oracle-input-bar"):
                 yield Input(
-                    placeholder="Ask a question or type a /command...", id="oracle-input"
+                    placeholder="Ask Oracle a question or type a /command...", id="oracle-input"
                 )

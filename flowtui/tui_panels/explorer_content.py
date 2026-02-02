@@ -54,6 +54,10 @@ class ExplorerContent(Vertical):
             target_node = frontends_node.add(f"🚀 [{self._get_color_for_type(target['type'])}]{target['id']}[/]")
             self._populate_for_frontend(target_node, target)
 
+        # --- Tests Node ---
+        # tests_node = root.add("📦 [b]Testing[/b]")
+        # self._populate_for_tests(tests_node)
+
         root.expand_all()
 
     def _get_color_for_type(self, target_type: str) -> str:

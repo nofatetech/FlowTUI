@@ -16,7 +16,7 @@ from tui_panels.oracle_content import OracleContent
 # -------------------------------------------------
 
 class FlowTUI(App):
-    TITLE = "Flow TUI - The Oracle"
+    TITLE = "Flow TUI"
     CSS = """
     Screen { layout: vertical; }
     Horizontal { height: 1fr; }
@@ -138,7 +138,7 @@ class FlowTUI(App):
 
     def scan_and_refresh_explorer(self) -> None:
         """Scans the project and tells the explorer to refresh."""
-        app_graph = self.code_scanner.build_app_graph(".") # Scan current directory
+        app_graph = self.code_scanner.scan_apps() # Scan current directory
         explorer = self.query_one(ExplorerContent)
         explorer.refresh_tree(app_graph)
 
