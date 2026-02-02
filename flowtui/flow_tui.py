@@ -9,7 +9,7 @@ from tui_panels.explorer_content import ExplorerContent
 from tui_panels.flow_implementation_content import FlowImplementationContent
 from tui_panels.inspector_content import InspectorContent
 from tui_panels.utilities_content import UtilitiesContent
-from tui_panels.oracle_content import OracleContent
+# from tui_panels.oracle_content import OracleContent
 
 # -------------------------------------------------
 # Main App
@@ -25,7 +25,6 @@ class FlowTUI(App):
     #col-2 { width: 1.5fr; }
     #col-3 { width: 1.5fr; }
     #col-4 { width: 1fr; }
-    #col-5 { width: 2.5fr; border-left: thick #4A0404; } /* Oracle column is wider and has a red border */
     .panel-title { background: #1e1e1e; color: #ffffff; padding: 0 1; text-style: bold; }
     .panel-body { height: 1fr; padding: 1; border: round #333333; }
     .panel-body > Tree { border: none; padding: 0; }
@@ -66,67 +65,6 @@ class FlowTUI(App):
         background: #3a3a3a;
     }
 
-    /* --- Oracle Panel Styling --- */
-    #oracle-container {
-        padding: 0;
-        layout: vertical;
-    }
-    #oracle-log {
-        height: 3fr; /* Takes up most of the space */
-        padding: 0 1;
-    }
-    .user-prompt {
-        text-align: right;
-        color: #cccccc;
-        margin: 1 0 0 4;
-        background: #2a2a2a;
-        padding: 0 1;
-        border: round #444444;
-    }
-    .user-prompt-action {
-        text-align: right;
-        color: #F5A623; /* Action color */
-        margin: 1 0 0 4;
-        background: #2a2a2a;
-        padding: 0 1;
-        border: round #F5A623;
-        width: auto;
-    }
-    .oracle-response {
-        color: #E0E0E0;
-        margin: 1 4 0 0;
-        background: #1e1e1e;
-        padding: 1;
-        border: round #FF0000;
-        width: 100%;
-        overflow: auto;
-    }
-    #oracle-chat-list-container {
-        height: 1fr; /* Takes up less space */
-        border-top: wide #4A0404;
-        padding: 1;
-    }
-    #oracle-chat-list-container ListView {
-        background: #1e1e1e;
-    }
-    #oracle-chat-list-container #active-chat {
-        background: #4A0404;
-    }
-    #new-chat-btn {
-        width: 100%;
-        margin-top: 1;
-    }
-    #oracle-input-bar {
-        height: auto;
-        padding: 1;
-        align: right middle;
-        border-top: wide #4A0404;
-    }
-    #oracle-input {
-        width: 1fr;
-        border: none;
-        background: #2a2a2a;
-    }
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -171,9 +109,7 @@ class FlowTUI(App):
                 with Panel("Deploy", "🚀") as p:
                     yield DeployInfo(classes="panel-body")
 
-            # --- COLUMN 5: THE ORACLE ---
-            with Panel("The Oracle (●)", "🤖", id="col-5"):
-                yield OracleContent()
+
         yield Footer()
 
     def on_flow_implementation_content_element_selected(
