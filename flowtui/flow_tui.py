@@ -6,7 +6,7 @@ from services.code_scanner import CodeScannerService
 from tui_panels.panel import Panel
 from tui_panels.deploy_info import DeployInfo
 from tui_panels.explorer_content import ExplorerContent
-from tui_panels.flow_implementation_content import FlowImplementationContent
+from tui_panels.component_overview_content import ComponentOverviewContent
 from tui_panels.inspector_content import InspectorContent
 from tui_panels.utilities_content import UtilitiesContent
 # from tui_panels.oracle_content import OracleContent
@@ -76,7 +76,7 @@ class FlowTUI(App):
 
     def scan_and_refresh_explorer(self) -> None:
         """Scans the project and tells the explorer to refresh."""
-        app_graph = self.code_scanner.scan_apps() # Scan current directory
+        app_graph = self.code_scanner.scan_project()
         explorer = self.query_one(ExplorerContent)
         explorer.refresh_tree(app_graph)
 
@@ -93,9 +93,9 @@ class FlowTUI(App):
             with Panel("Explorer", "🌐", id="col-1"):
                 yield ExplorerContent(classes="panel-body")
 
-            # --- COLUMN 2: FLOW IMPLEMENTATION ---
-            with Panel("Flow Implementation", "📁", id="col-2"):
-                yield FlowImplementationContent(classes="panel-body")
+            # --- COLUMN 2: COMPONENT OVERVIEW ---
+            with Panel("Component Overview", "🧩", id="col-2"):
+                yield ComponentOverviewContent(classes="panel-body")
 
             # --- COLUMN 3: INSPECTOR ---
             with Panel("Inspector", "🔍", id="col-3"):
@@ -112,26 +112,26 @@ class FlowTUI(App):
 
         yield Footer()
 
-    def on_flow_implementation_content_element_selected(
-        self, message: FlowImplementationContent.ElementSelected
+    def on_component_overview_content_element_selected(
+        self, message: ComponentOverviewContent.ElementSelected
     ) -> None:
         """When an element is selected in the view tree, update the inspector."""
         inspector = self.query_one(InspectorContent)
-        inspector.on_flow_implementation_content_element_selected(message)
+        inspector.on_component_overview_content_element_selected(message)
 
     def on_explorer_content_flow_selected(
         self, message: ExplorerContent.FlowSelected
     ) -> None:
         """When a flow is selected in the explorer, update the implementation panel."""
-        flow_implementation = self.query_one(FlowImplementationContent)
-        flow_implementation.on_explorer_content_flow_selected(message)
+        component_overview = self.query_one(ComponentOverviewContent)
+        component_overview.on_explorer_content_flow_selected(message)
 
-    def on_flow_implementation_content_method_selected(
-        self, message: FlowImplementationContent.MethodSelected
+    def on_component_overview_content_method_selected(
+        self, message: ComponentOverviewContent.MethodSelected
     ) -> None:
         """When a method is selected in the implementation panel, update the inspector."""
         inspector = self.query_one(InspectorContent)
-        inspector.on_flow_implementation_content_method_selected(message)
+        inspector.on_component_overview_content_method_selected(message)
 
 
 

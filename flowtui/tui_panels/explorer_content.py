@@ -33,7 +33,7 @@ class ExplorerContent(Vertical):
         self._populate_unified_tree(tree.root)
 
     def _populate_unified_tree(self, root: TreeNode) -> None:
-        """Populates the tree based on the new, deep 'apps' structure."""
+        """Populates the tree based on the simple file tree from the CodeScannerService."""
         scan_node = root.add("🔄 [bold cyan]Rescan Project[/]")
         scan_node.data = {"action": "scan"}
 
@@ -41,48 +41,96 @@ class ExplorerContent(Vertical):
             root.add("⚠️ [red]No apps found or scan failed.[/]")
             return
 
-        def _add_nodes_recursively(parent_node: TreeNode, node_data: dict):
-            """Helper function to recursively add nodes to the tree."""
-            for name, content in sorted(node_data.items()):
-                if content is None:  # It's a file
-                    parent_node.add(f"📄 {name}")
-                else:  # It's a directory
-                    dir_node = parent_node.add(f"📁 {name}")
-                    _add_nodes_recursively(dir_node, content)
-
-        for app_name, app_data in self.app_graph.items():
-            app_node = root.add(f"🚀 [b]{app_name}[/b]")
+        def _get_node_meta(path: str, is_dir: bool) -> dict:
+            """Infers the node type and icon from its path."""
+            if is_dir:
+                return {"type": "directory", "icon": "📁"}
             
+            if "backend/flows" in path:
+                return {"type": "flow", "icon": "▶️"}
+            if "backend/models" in path:
+                return {"type": "model", "icon": "🔹"}
+            if "backend/contracts" in path:
+                return {"type": "contract", "icon": "📜"}
+            if "backend/services" in path:
+                return {"type": "service", "icon": "🛠️"}
+            if "backend/providers" in path:
+                return {"type": "provider", "icon": "🔌"}
+            if ".html" in path:
+                return {"type": "view", "icon": "🖼️"}
+            
+            return {"type": "file", "icon": "📄"}
+
+        def _add_nodes_recursively(parent_node: TreeNode, node_data: dict, current_path: str):
+            """Helper function to recursively add nodes from a simple file tree."""
+            for name, content in sorted(node_data.items()):
+                new_path = os.path.join(current_path, name)
+                is_dir = isinstance(content, dict)
+                
+                meta = _get_node_meta(new_path, is_dir)
+                node_type = meta["type"]
+                icon = meta["icon"]
+
+                node = parent_node.add(f"{icon} {name}")
+                node.data = {"type": node_type, "file_path": new_path, "name": name}
+
+                if is_dir:
+                    _add_nodes_recursively(node, content, new_path)
+
+        # Add the core backend at the root level
+        if self.app_graph.get("backend_tree"):
+            backend_node = root.add("📦 [b]Backend[/b]")
+            backend_base_path = "backend"
+            backend_node.data = {"type": "directory", "file_path": backend_base_path}
+            _add_nodes_recursively(backend_node, self.app_graph["backend_tree"], backend_base_path)
+
+        # Add the apps
+        apps_data = self.app_graph.get("apps", {})
+        if not apps_data:
+            return # No apps to show
+
+        apps_root_node = root.add("🚀 [b]Apps[/b]")
+        for app_name, app_data in apps_data.items():
+            app_node = apps_root_node.add(f"📱 {app_name}")
+            app_path = os.path.join("apps", app_name) # Base path for the app
+
             if app_data.get("backend_tree"):
+                backend_base_path = os.path.join(app_path, "backend")
                 backend_node = app_node.add("📦 Backend")
-                _add_nodes_recursively(backend_node, app_data["backend_tree"])
+                backend_node.data = {"type": "directory", "file_path": backend_base_path}
+                _add_nodes_recursively(backend_node, app_data["backend_tree"], backend_base_path)
 
             if app_data.get("frontends"):
                 frontends_node = app_node.add("🖥️ Frontends")
                 for frontend in app_data["frontends"]:
                     fe_node = frontends_node.add(f"🌐 {frontend['name']}")
+                    frontend_path = os.path.join(app_path, frontend['name'])
+                    fe_node.data = {"type": "directory", "file_path": frontend_path}
                     if frontend.get("tree"):
-                        _add_nodes_recursively(fe_node, frontend["tree"])
+                        _add_nodes_recursively(fe_node, frontend["tree"], frontend_path)
         
         root.expand_all()
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        """Post a message when a node is selected."""
+        """Post a message when any node (file or directory) is selected."""
         if not event.node.data:
             return
 
-        # Check if the rescan button was clicked
-        if event.node.data.get("action") == "scan":
+        action = event.node.data.get("action")
+        if action == "scan":
             self.post_message(self.ScanProjectRequested())
             return
 
-        # Otherwise, handle as a file selection
-        if "file_path" in event.node.data:
-            node_data = event.node.data
+        # Handle both file and directory selections
+        node_type = event.node.data.get("type")
+        file_path = event.node.data.get("file_path")
+        name = event.node.data.get("name", os.path.basename(file_path or ""))
+
+        if node_type and file_path:
             self.post_message(self.FlowSelected(
-                name=node_data["name"],
-                file_path=node_data["file_path"],
-                target_type=node_data["type"]
+                name=name,
+                file_path=file_path,
+                target_type=node_type
             ))
 
     def compose(self) -> ComposeResult:

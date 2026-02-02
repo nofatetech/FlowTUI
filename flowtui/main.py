@@ -7,7 +7,7 @@ def main():
     Main entry point for the FlowTUI application.
     """
     scanner = CodeScannerService()
-    app_graph = scanner.scan_apps()
+    app_graph = scanner.scan_project()
     print(json.dumps(app_graph, indent=2))
 
 

@@ -21,16 +21,26 @@ class CodeScannerService:
                 tree[name] = None  # Mark as file
         return tree
 
-    def scan_apps(self, root_dir: str = "apps") -> dict:
+    def scan_project(self) -> dict:
         """
-        Scans the project's 'apps' directory and builds a deep graph of the applications.
+        Scans the project's 'apps' and 'backend' directories and builds a deep graph.
 
         Returns:
             A dictionary representing the application graph with full file trees.
         """
-        apps_graph = {}
+        project_graph = {
+            "apps": {},
+            "backend_tree": None,
+        }
+
+        # Scan the root backend directory
+        if os.path.exists("backend") and os.path.isdir("backend"):
+            project_graph["backend_tree"] = self._scan_directory_recursively("backend")
+
+        # Scan the apps directory
+        root_dir = "apps"
         if not os.path.exists(root_dir) or not os.path.isdir(root_dir):
-            return apps_graph
+            return project_graph
 
         for app_name in os.listdir(root_dir):
             app_path = os.path.join(root_dir, app_name)
@@ -53,9 +63,9 @@ class CodeScannerService:
                         "tree": self._scan_directory_recursively(item_path)
                     })
 
-            apps_graph[app_name] = {
+            project_graph["apps"][app_name] = {
                 "backend_tree": backend_tree,
                 "frontends": frontends
             }
 
-        return apps_graph
+        return project_graph

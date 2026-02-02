@@ -8,7 +8,7 @@ from textual.widgets import Static, Input, Button, Label
 from textual.binding import Binding
 
 # Import the message classes from the other panels
-from tui_panels.flow_implementation_content import FlowImplementationContent
+from tui_panels.component_overview_content import ComponentOverviewContent
 from tui_panels.explorer_content import ExplorerContent
 
 class InspectorContent(VerticalScroll):
@@ -177,7 +177,7 @@ class InspectorContent(VerticalScroll):
 
     # --- Message Handlers & Event Logic ---
 
-    def on_flow_implementation_content_element_selected(self, message: FlowImplementationContent.ElementSelected) -> None:
+    def on_component_overview_content_element_selected(self, message: ComponentOverviewContent.ElementSelected) -> None:
         """Receives the message and stores the context, then updates the UI."""
         self.current_context = "html"
         self.element_data = message.element_data
@@ -185,7 +185,7 @@ class InspectorContent(VerticalScroll):
         self.original_line = message.original_line
         self.update_inspector(self.element_data)
         
-    def on_flow_implementation_content_method_selected(self, message: FlowImplementationContent.MethodSelected) -> None:
+    def on_component_overview_content_method_selected(self, message: ComponentOverviewContent.MethodSelected) -> None:
         """Receives message from implementation panel and updates inspector for a method."""
         self.current_context = "method"
         self.method_data = message.__dict__

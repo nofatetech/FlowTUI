@@ -9,7 +9,7 @@ from textual.message import Message
 # Import the message from the explorer panel
 from tui_panels.explorer_content import ExplorerContent
 
-class FlowImplementationContent(Vertical):
+class ComponentOverviewContent(Vertical):
     """
     Displays the implementation details (Controllers and Views) for a
     Flow that is selected in the Explorer panel.
@@ -600,6 +600,63 @@ class FlowImplementationContent(Vertical):
                 if file.endswith(".py") and not file.startswith("__"):
                     parent_node.add(f"📄 [yellow]{file}[/yellow]")
 
+    FOLDER_DESCRIPTIONS = {
+        "contracts": """[b]📦 Contracts[/b]
+
+Contracts define the data schemas for API inputs and outputs, acting as a clear agreement for data exchange.
+
+[u]Primary Responsibilities:[/u]
+- [b]Validation:[/b] Ensure incoming data is correctly structured.
+- [b]Serialization:[/b] Format outgoing data consistently.
+- [b]Clarity:[/b] Provide a single source of truth for data shapes.
+
+Uses [i]Pydantic[/i] models for robust type-checking.""",
+        "flows": """[b]▶️ Flows[/b]
+
+Flows are the core of the application's business logic, orchestrating user actions and data manipulation.
+
+[u]Primary Responsibilities:[/u]
+- [b]Handle Requests:[/b] Map HTTP verbs (GET, POST) to specific actions.
+- [b]Orchestrate Logic:[/b] Coordinate between services, models, and providers.
+- [b]Return Responses:[/b] Send back data or rendered HTML fragments.
+
+Each flow class inherits from `BaseFlow`.""",
+        "models": """[b]🔹 Models[/b]
+
+Models represent the core data structures and domain objects of the application.
+
+[u]Primary Responsibilities:[/u]
+- [b]Data Structure:[/b] Define the attributes and types of objects (e.g., User, Product).
+- [b]Business Rules:[/b] Can contain logic directly related to the data they represent.
+- [b]Database Mapping:[/b] Often correspond to database tables (though not a strict rule).""",
+        "providers": """[b]🔌 Providers[/b]
+
+Providers abstract interactions with external, third-party services and APIs.
+
+[u]Primary Responsibilities:[/u]
+- [b]Encapsulate Complexity:[/b] Hide the details of API calls, authentication, etc.
+- [b]Standardize Interface:[/b] Provide a simple, consistent way to use external services.
+- [b]Isolate Dependencies:[/b] Prevent third-party library specifics from leaking into business logic.""",
+        "services": """[b]🛠️ Services[/b]
+
+Services contain shared, reusable business logic that doesn't fit neatly into a single flow or model.
+
+[u]Primary Responsibilities:[/u]
+- [b]Shared Logic:[/b] House complex operations used by multiple flows (e.g., calculations, data processing).
+- [b]Decouple Concerns:[/b] Separate high-level orchestration (in Flows) from low-level implementation details.
+- [b]Manage Resources:[/b] Can be responsible for managing connections like databases or message queues."""
+    }
+
+    def _update_tree_for_directory(self, folder_path: str) -> None:
+        """Clear the tree and show an overview for the selected directory."""
+        tree = self.query_one(Tree)
+        tree.clear()
+        folder_name = os.path.basename(folder_path)
+        tree.root.label = f"📁 {folder_name}"
+        description = self.FOLDER_DESCRIPTIONS.get(folder_name, "No description available for this folder.")
+        tree.root.add_leaf(description)
+        tree.root.expand()
+
     def on_explorer_content_flow_selected(self, message: ExplorerContent.FlowSelected) -> None:
         """Listen for messages from the explorer and update this panel based on target type."""
         target_type = message.target_type
@@ -610,6 +667,8 @@ class FlowImplementationContent(Vertical):
             self._update_tree_for_view(message.name, message.file_path)
         elif target_type == "model":
             self._update_tree_for_model(message.name, message.file_path)
+        elif target_type == "directory":
+            self._update_tree_for_directory(message.file_path)
         else:
             # Default case: clear the tree if the type is unknown
             self.query_one(Tree).clear()
